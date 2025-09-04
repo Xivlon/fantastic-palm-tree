@@ -43,27 +43,3 @@ pip install -e .
 ```bash
 pip install -e ".[dev]"
 pytest
-```
-
-## Test Coverage Summary
-
-A detailed matrix of covered behaviors lives in `docs/TEST_COVERAGE.md`. Highlights:
-
-- ATR sizing, equity caps, short-sell enable flag
-- Partial exits (single-per-bar constraint, priority over trailing stops)
-- Trailing stops: activation thresholds, percent & ATR (dynamic vs static)
-- Drawdown kill switch
-- Dynamic ATR expansion affecting trailing distance
-
-Planned additions: daily loss kill, multi-symbol concurrency limits, cost model validation, reversals, trailing-after-partials nuances.
-
-Run tests:
-```bash
-pytest -q
-pytest --cov=. --cov-report=term-missing
-```
-
-Contribute:
-- Use fixtures in `tests/conftest.py`.
-- Parametrize similar behaviors rather than cloning tests.
-- Prefer public APIs over internal attribute access; open an issue if missing.
