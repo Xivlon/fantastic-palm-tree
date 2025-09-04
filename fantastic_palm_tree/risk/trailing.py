@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from ..config import StrategyConfig
 from ..indicators.atr import ATRCalculator
 from ..models.position import TradePosition
@@ -17,7 +15,7 @@ class TrailingStopEngine:
         self.config = config
         self.atr_calc = atr_calc
 
-    def compute_distance(self, position: Optional[TradePosition]) -> float:
+    def compute_distance(self, position: TradePosition | None) -> float:
         if not position:
             return 0.0
         trailing_cfg = self.config.trailing
@@ -32,7 +30,9 @@ class TrailingStopEngine:
             return position.entry_atr
         return position.entry_atr
 
-    def update_trailing_stop(self, position: TradePosition, current_price: float) -> Optional[float]:
+    def update_trailing_stop(
+        self, position: TradePosition, current_price: float
+    ) -> float | None:
         distance = self.compute_distance(position)
         if distance <= 0:
             return None

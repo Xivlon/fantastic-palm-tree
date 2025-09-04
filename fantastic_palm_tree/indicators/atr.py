@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import List
-
 
 class ATRCalculator:
     """
@@ -11,7 +9,7 @@ class ATRCalculator:
 
     def __init__(self, period: int = 14):
         self.period = period
-        self._true_ranges: List[float] = []
+        self._true_ranges: list[float] = []
 
     def add_bar(self, high: float, low: float, prev_close: float) -> float:
         true_range = max(

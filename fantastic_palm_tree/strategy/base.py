@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional
 
 from ..models.position import TradePosition
 from ..results import BarProcessResult, ExitResult
 
 
 class BaseStrategy(ABC):
-    position: Optional[TradePosition]
+    position: TradePosition | None
 
     @abstractmethod
     def enter_position(self, price: float, size: float, is_long: bool = True) -> bool: ...

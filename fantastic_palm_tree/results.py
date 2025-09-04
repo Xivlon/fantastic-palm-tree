@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
@@ -17,5 +16,5 @@ class ExitResult:
 class BarProcessResult:
     atr: float
     stop_hit: bool
-    exit_result: Optional[ExitResult]
-    stop_price: Optional[float] = None
+    exit_result: ExitResult | None
+    stop_price: float | None = None

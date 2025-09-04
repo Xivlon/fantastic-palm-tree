@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from typing import Optional
 
 from ..config import StrategyConfig
-from ..exceptions import PositionExistsError, NoPositionError
+from ..exceptions import NoPositionError, PositionExistsError
 from ..indicators.atr import ATRCalculator
 from ..logging import get_logger
 from ..models.position import TradePosition
-from ..results import ExitResult, BarProcessResult
+from ..results import BarProcessResult, ExitResult
 from ..risk.trailing import TrailingStopEngine
 from .base import BaseStrategy
 
@@ -24,7 +23,7 @@ class EnhancedStrategy(BaseStrategy):
         self.config = config
         self.atr_calc = ATRCalculator(period=config.atr_period)
         self.trailing = TrailingStopEngine(config, self.atr_calc)
-        self.position: Optional[TradePosition] = None
+        self.position: TradePosition | None = None
         self._realized_pnl = 0.0
         self.commission_rate = 0.0
         self.slippage = 0.0
@@ -99,7 +98,7 @@ class EnhancedStrategy(BaseStrategy):
         self, high: float, low: float, close: float, prev_close: float
     ) -> BarProcessResult:
         atr = self.update_atr(high, low, prev_close)
-        exit_res: Optional[ExitResult] = None
+        exit_res: ExitResult | None = None
         stop_hit = False
         stop_price = None
 
@@ -117,7 +116,7 @@ class EnhancedStrategy(BaseStrategy):
             stop_price=stop_price,
         )
 
-    def get_position_info(self) -> Optional[dict]:
+    def get_position_info(self) -> dict | None:
         if not self.position:
             return None
         return {
