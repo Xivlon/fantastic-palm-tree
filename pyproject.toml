@@ -1,11 +1,10 @@
-name=pyproject.toml
 [build-system]
 requires = ["setuptools>=67", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "fantastic-palm-tree"
-version = "0.1.0"
+version = "0.2.0"  # Keep 0.2.0: reflects breaking return-type change
 description = "Advanced backtesting framework with ATR-based exits, risk controls, and extensible strategy components"
 readme = "README.md"
 authors = [
@@ -23,11 +22,9 @@ classifiers = [
   "Topic :: Office/Business :: Financial :: Investment"
 ]
 
-# NOTE: Keep runtime requirements minimal; expand as modules are added
 dependencies = []
 
 [project.optional-dependencies]
-# Developer / CI toolchain
 dev = [
   "pytest>=8.0",
   "pytest-cov>=5.0",
@@ -42,7 +39,7 @@ python_files = ["test_*.py", "*_test.py"]
 
 [tool.coverage.run]
 branch = true
-source = ["."]
+source = ["fantastic_palm_tree"]
 
 [tool.coverage.report]
 show_missing = true
