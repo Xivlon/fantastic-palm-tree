@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
@@ -11,7 +10,7 @@ class TradePosition:
     entry_atr: float
     is_long: bool
     timestamp: int = 0
-    stop_price: Optional[float] = None
+    stop_price: float | None = None
 
     def unrealized_pnl(self, mark_price: float) -> float:
         if self.size == 0:

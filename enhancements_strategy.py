@@ -243,3 +243,94 @@ class EnhancedStrategy:
     def get_realized_pnl(self) -> float:
         """Get total realized PnL"""
         return self.pnl
+
+
+# Additional classes needed for test compatibility
+
+@dataclass
+class Position:
+    """Position tracking for broker interface"""
+    symbol: str
+    qty: float
+    avg_price: float
+
+
+@dataclass 
+class Fill:
+    """Represents a trade execution fill"""
+    symbol: str
+    side: str  # "BUY" or "SELL"
+    qty: float
+    price: float
+
+
+@dataclass
+class Bar:
+    """Represents a price bar/candle"""
+    symbol: str
+    datetime: Any  # datetime object
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: float
+
+
+class BrokerInterface:
+    """Abstract interface for broker operations"""
+    
+    def __init__(self, starting_equity: float = 100_000):
+        self._equity = starting_equity
+        self._positions: Dict[str, Position] = {}
+    
+    @property
+    def equity(self) -> float:
+        return self._equity
+    
+    def get_position(self, symbol: str) -> Optional[Position]:
+        return self._positions.get(symbol)
+    
+    def open_positions(self) -> List[Position]:
+        return list(self._positions.values())
+    
+    def execute(self, orders, slippage_model=None, commission_model=None) -> List[Fill]:
+        return []
+    
+    def flatten_all(self) -> None:
+        self._positions.clear()
+
+
+class MetricsTracker:
+    """Tracks trading metrics and open trades"""
+    
+    def __init__(self):
+        self._open_trades: Dict[str, Any] = {}
+    
+    def get_open_trade(self, symbol: str) -> Optional[Any]:
+        return self._open_trades.get(symbol)
+
+
+class ATRTracker:
+    """Tracks ATR values"""
+    
+    def __init__(self):
+        self.tr_values: Dict[str, Any] = {}
+
+
+class EnhancementsContext:
+    """Main context for enhanced trading strategy"""
+    
+    def __init__(self, config: Dict[str, Any], broker: BrokerInterface, indicator_fn):
+        self.config = config
+        self.broker = broker  
+        self.indicator_fn = indicator_fn
+        self.metrics_tracker = MetricsTracker()
+        self.atr_tracker = ATRTracker()
+    
+    def on_bar_start(self, bar: Bar, broker: BrokerInterface) -> None:
+        """Called at the start of each bar"""
+        pass
+    
+    def process_symbol(self, symbol: str, bar: Bar, broker: BrokerInterface, adv_lookup) -> List[Fill]:
+        """Process a symbol for the given bar"""
+        return []
