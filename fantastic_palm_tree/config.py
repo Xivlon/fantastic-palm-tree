@@ -13,7 +13,7 @@ DEFAULT_TRAILING = {
     "dynamic_atr_min_samples": 1,
 }
 
-dataclass
+@dataclass
 class StrategyConfig:
     exits: Dict[str, Any] = field(default_factory=dict)
     atr_period: int = 14
