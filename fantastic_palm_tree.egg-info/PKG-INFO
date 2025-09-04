@@ -1,0 +1,69 @@
+Metadata-Version: 2.4
+Name: fantastic-palm-tree
+Version: 0.1.0
+Summary: Advanced backtesting framework with Schwab broker integration
+Author-email: Trading Team <team@example.com>
+License: MIT
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: numpy>=1.20.0
+Requires-Dist: pandas>=1.3.0
+Requires-Dist: matplotlib>=3.0.0
+Requires-Dist: requests>=2.25.0
+Requires-Dist: aiohttp>=3.8.0
+Requires-Dist: pydantic>=1.8.0
+Requires-Dist: python-dateutil>=2.8.0
+Requires-Dist: pytz>=2021.1
+Provides-Extra: dev
+Requires-Dist: pytest>=6.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.18.0; extra == "dev"
+Requires-Dist: black>=21.0; extra == "dev"
+Requires-Dist: flake8>=3.9.0; extra == "dev"
+Requires-Dist: mypy>=0.910; extra == "dev"
+
+# Fantastic Palm Tree - Advanced Backtesting Framework
+
+A comprehensive backtesting framework with advanced metrics, parameter sweeping, kill-switch mechanisms, and Schwab broker integration.
+
+## Features
+
+- **Advanced Backtest Architecture**: Modular strategy framework with comprehensive data handling
+- **Performance Metrics**: Extensive performance and risk metrics calculation
+- **Parameter Sweep**: Parallel parameter optimization and testing
+- **Kill-Switch**: Risk management and emergency stop mechanisms
+- **Schwab Broker**: Integration scaffold for Charles Schwab API
+
+## Quick Start
+
+```python
+from backtesting import BacktestEngine, Strategy
+from backtesting.brokers import SchwabBroker
+from backtesting.metrics import MetricsCalculator
+
+# Define your strategy
+class MyStrategy(Strategy):
+    def on_data(self, data):
+        # Your trading logic here
+        pass
+
+# Run backtest
+engine = BacktestEngine()
+results = engine.run(MyStrategy(), data)
+
+# Calculate metrics
+metrics = MetricsCalculator.calculate(results)
+print(f"Sharpe Ratio: {metrics.sharpe_ratio}")
+```
+
+## Installation
+
+```bash
+pip install -e .
+```
+
+## Development
+
+```bash
+pip install -e ".[dev]"
+pytest
+```
