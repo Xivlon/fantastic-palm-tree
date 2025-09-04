@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict
+from typing import Any
 
 from .exceptions import InvalidConfigError
-
 
 DEFAULT_TRAILING = {
     "enabled": True,
@@ -13,9 +12,10 @@ DEFAULT_TRAILING = {
     "dynamic_atr_min_samples": 1,
 }
 
+
 @dataclass
 class StrategyConfig:
-    exits: Dict[str, Any] = field(default_factory=dict)
+    exits: dict[str, Any] = field(default_factory=dict)
     atr_period: int = 14
 
     def __post_init__(self) -> None:
@@ -33,5 +33,5 @@ class StrategyConfig:
             raise InvalidConfigError("dynamic_atr_min_samples must be positive int")
 
     @property
-    def trailing(self) -> Dict[str, Any]:
+    def trailing(self) -> dict[str, Any]:
         return self.exits["trailing"]
