@@ -36,7 +36,7 @@ python_files = ["test_*.py", "*_test.py"]
 
 [tool.coverage.run]
 branch = true
-source = ["fantastic_palm_tree"]
+source = ["."]
 
 [tool.coverage.report]
 show_missing = true
