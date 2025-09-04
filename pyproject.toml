@@ -4,12 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fantastic-palm-tree"
-version = "0.2.0"  # Keep 0.2.0: reflects breaking return-type change
-description = "Advanced backtesting framework with ATR-based exits, risk controls, and extensible strategy components"
-readme = "README.md"
-authors = [
-  { name = "Xivlon" }
-]
+
 license = { text = "MIT" }
 requires-python = ">=3.10"
 keywords = ["trading", "backtest", "strategy", "risk", "ATR"]
@@ -21,8 +16,6 @@ classifiers = [
   "Intended Audience :: Financial and Insurance Industry",
   "Topic :: Office/Business :: Financial :: Investment"
 ]
-
-dependencies = []
 
 [project.optional-dependencies]
 dev = [
