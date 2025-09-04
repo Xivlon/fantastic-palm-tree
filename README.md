@@ -43,4 +43,3 @@ pip install -e .
 ```bash
 pip install -e ".[dev]"
 pytest
-```
