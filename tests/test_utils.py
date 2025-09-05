@@ -1,5 +1,6 @@
 from enhancements_strategy import BrokerInterface, Position
 
+
 class TrackingBroker(BrokerInterface):
     """
     Broker stub that mirrors fills into position state so PositionManager
@@ -7,6 +8,7 @@ class TrackingBroker(BrokerInterface):
     After each ctx.process_symbol(...) call, invoke broker.apply_fills(fills)
     to update synthetic position state.
     """
+
     def __init__(self, starting_equity=100_000):
         self._equity = starting_equity
         self._positions = {}

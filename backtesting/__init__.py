@@ -6,36 +6,36 @@ kill-switch mechanisms, and Schwab broker integration.
 """
 
 from .core import BacktestEngine, Strategy, DataHandler, Portfolio
-from .metrics import MetricsCalculator, PerformanceMetrics, MetricsPipeline
+from .metrics import MetricsCalculator, PerformanceMetrics
 from .sweep import ParameterOptimizer, GridSearchOptimizer, ParameterSpace
 from .killswitch import KillSwitchManager, create_default_kill_switches
-from .brokers import SchwabBroker, BaseBroker
+
+try:
+    from .broker import SchwabBroker, BaseBroker
+except ImportError:
+    SchwabBroker = None
+    BaseBroker = None
 
 __version__ = "0.1.0"
 __author__ = "Trading Team"
 
 __all__ = [
     # Core components
-    'BacktestEngine',
-    'Strategy',
-    'DataHandler', 
-    'Portfolio',
-    
+    "BacktestEngine",
+    "Strategy",
+    "DataHandler",
+    "Portfolio",
     # Metrics
-    'MetricsCalculator',
-    'PerformanceMetrics',
-    'MetricsPipeline',
-    
+    "MetricsCalculator",
+    "PerformanceMetrics",
     # Parameter optimization
-    'ParameterOptimizer',
-    'GridSearchOptimizer', 
-    'ParameterSpace',
-    
+    "ParameterOptimizer",
+    "GridSearchOptimizer",
+    "ParameterSpace",
     # Risk management
-    'KillSwitchManager',
-    'create_default_kill_switches',
-    
-    # Broker integration
-    'SchwabBroker',
-    'BaseBroker'
+    "KillSwitchManager",
+    "create_default_kill_switches",
 ]
+
+if SchwabBroker and BaseBroker:
+    __all__ += ["SchwabBroker", "BaseBroker"]

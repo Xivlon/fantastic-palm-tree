@@ -10,7 +10,9 @@ class BaseStrategy(ABC):
     position: TradePosition | None
 
     @abstractmethod
-    def enter_position(self, price: float, size: float, is_long: bool = True) -> bool: ...
+    def enter_position(
+        self, price: float, size: float, is_long: bool = True
+    ) -> bool: ...
 
     @abstractmethod
     def exit_position(self, price: float, reason: str = "manual") -> ExitResult: ...

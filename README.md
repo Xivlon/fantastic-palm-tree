@@ -63,34 +63,8 @@ pip install -e .
 
 ## Development
 
+### Setup
+
 ```bash
 # Install with development dependencies
 pip install -e ".[dev]"
-
-# Run tests
-pytest
-
-# Run tests with coverage
-pytest --cov=. --cov-report=term-missing
-
-# Run linting
-ruff check .
-
-# Run formatting
-ruff format .
-
-# Check types (currently disabled due to package naming)
-# mypy fantastic_palm_tree/
-```
-
-### Continuous Integration
-
-This project uses GitHub Actions for continuous integration. The CI pipeline:
-
-- Tests on Python 3.10, 3.11, and 3.12
-- Runs ruff for linting and formatting checks
-- Executes the full test suite with pytest
-- Measures code coverage and enforces minimum thresholds
-- Uploads coverage reports to Codecov
-
-All pull requests must pass the CI checks before merging.

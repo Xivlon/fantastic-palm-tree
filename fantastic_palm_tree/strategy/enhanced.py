@@ -37,7 +37,9 @@ class EnhancedStrategy(BaseStrategy):
 
     def enter_position(self, price: float, size: float, is_long: bool = True) -> bool:
         if self.position is not None:
-            raise PositionExistsError("A position already exists; exit before entering a new one.")
+            raise PositionExistsError(
+                "A position already exists; exit before entering a new one."
+            )
         entry_atr = self.atr_calc.get_atr()
         effective_price = price + (self.slippage if is_long else -self.slippage)
         commission = abs(size * effective_price * self.commission_rate)
@@ -60,7 +62,9 @@ class EnhancedStrategy(BaseStrategy):
         )
         return True
 
-    def _compute_r_multiple(self, position_pnl: float, position: TradePosition) -> float:
+    def _compute_r_multiple(
+        self, position_pnl: float, position: TradePosition
+    ) -> float:
         if position.size == 0:
             return 0.0
         risk_per_share = position.entry_atr if position.entry_atr > 0 else 1.0
@@ -71,7 +75,9 @@ class EnhancedStrategy(BaseStrategy):
         if not self.position:
             raise NoPositionError("No position to exit.")
         position = self.position
-        effective_price = price + (-self.slippage if position.is_long else self.slippage)
+        effective_price = price + (
+            -self.slippage if position.is_long else self.slippage
+        )
         commission = abs(position.size * effective_price * self.commission_rate)
 
         if position.is_long:
@@ -106,7 +112,9 @@ class EnhancedStrategy(BaseStrategy):
             stop_price = self.trailing.update_trailing_stop(self.position, close)
             if self.trailing.stop_hit(self.position, bar_high=high, bar_low=low):
                 assert self.position.stop_price is not None
-                exit_res = self.exit_position(self.position.stop_price, reason="stop_loss")
+                exit_res = self.exit_position(
+                    self.position.stop_price, reason="stop_loss"
+                )
                 stop_hit = True
 
         return BarProcessResult(
