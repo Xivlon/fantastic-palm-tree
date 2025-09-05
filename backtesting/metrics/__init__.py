@@ -1,11 +1,6 @@
 from .calculator import MetricsCalculator
 from .performance import PerformanceMetrics
-from .risk import RiskMetrics
 from .reports import ReportGenerator
+from .risk import RiskMetrics
 
-__all__ = [
-    'MetricsCalculator',
-    'PerformanceMetrics', 
-    'RiskMetrics',
-    'ReportGenerator'
-]
+__all__ = ["MetricsCalculator", "PerformanceMetrics", "RiskMetrics", "ReportGenerator"]

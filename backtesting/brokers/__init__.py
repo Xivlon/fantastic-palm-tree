@@ -1,9 +1,5 @@
-from .schwab import SchwabBroker
-from .base import BaseBroker
 from .auth import SchwabAuth
+from .base import BaseBroker
+from .schwab import SchwabBroker
 
-__all__ = [
-    'SchwabBroker',
-    'BaseBroker',
-    'SchwabAuth'
-]
+__all__ = ["SchwabBroker", "BaseBroker", "SchwabAuth"]

@@ -4,69 +4,66 @@ Enhanced Trading Strategy with Dynamic ATR Trailing Configuration
 This module implements trading strategy enhancements with dynamic ATR trailing stops.
 """
 
-import math
-from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
+from typing import Any
 
 
 @dataclass
 class TradePosition:
     """Represents a trading position"""
+
     entry_price: float
     size: float
     entry_atr: float
     timestamp: int = 0
-    stop_price: Optional[float] = None
+    stop_price: float | None = None
     is_long: bool = True
 
 
 @dataclass
 class StrategyConfig:
     """Configuration for strategy behavior"""
-    exits: Dict[str, Any] = field(default_factory=dict)
+
+    exits: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
-        if 'trailing' not in self.exits:
-            self.exits['trailing'] = {}
-        
-        trailing = self.exits['trailing']
-        if 'use_dynamic_atr' not in trailing:
-            trailing['use_dynamic_atr'] = False
-        if 'dynamic_atr_min_samples' not in trailing:
-            trailing['dynamic_atr_min_samples'] = 1
-        if 'type' not in trailing:
-            trailing['type'] = 'atr'
-        if 'enabled' not in trailing:
-            trailing['enabled'] = True
+        if "trailing" not in self.exits:
+            self.exits["trailing"] = {}
+
+        trailing = self.exits["trailing"]
+        if "use_dynamic_atr" not in trailing:
+            trailing["use_dynamic_atr"] = False
+        if "dynamic_atr_min_samples" not in trailing:
+            trailing["dynamic_atr_min_samples"] = 1
+        if "type" not in trailing:
+            trailing["type"] = "atr"
+        if "enabled" not in trailing:
+            trailing["enabled"] = True
 
 
 class ATRCalculator:
     """Calculate Average True Range"""
-    
+
     def __init__(self, period: int = 14):
         self.period = period
-        self.true_ranges: List[float] = []
-    
+        self.true_ranges: list[float] = []
+
     def add_bar(self, high: float, low: float, prev_close: float) -> float:
         """Add a new bar and calculate TR"""
-        true_range = max(
-            high - low,
-            abs(high - prev_close),
-            abs(low - prev_close)
-        )
-        
+        true_range = max(high - low, abs(high - prev_close), abs(low - prev_close))
+
         self.true_ranges.append(true_range)
         if len(self.true_ranges) > self.period:
             self.true_ranges.pop(0)
-        
+
         return self.get_atr()
-    
+
     def get_atr(self) -> float:
         """Get current ATR value"""
         if not self.true_ranges:
             return 0.0
         return sum(self.true_ranges) / len(self.true_ranges)
-    
+
     def has_enough_samples(self, min_samples: int = 1) -> bool:
         """Check if we have enough samples for reliable ATR"""
         return len(self.true_ranges) >= min_samples
@@ -74,60 +71,57 @@ class ATRCalculator:
 
 class EnhancedStrategy:
     """Enhanced trading strategy with dynamic ATR trailing stops"""
-    
+
     def __init__(self, config: StrategyConfig):
         self.config = config
         self.atr_calculator = ATRCalculator()
-        self.position: Optional[TradePosition] = None
+        self.position: TradePosition | None = None
         self.pnl = 0.0
         self.commission_rate = 0.0
         self.slippage = 0.0
-        
+
     def set_fees(self, commission_rate: float = 0.0, slippage: float = 0.0):
         """Set commission and slippage rates"""
         self.commission_rate = commission_rate
         self.slippage = slippage
-    
+
     def update_atr(self, high: float, low: float, prev_close: float) -> float:
         """Update ATR calculation with new bar data"""
         return self.atr_calculator.add_bar(high, low, prev_close)
-    
+
     def enter_position(self, price: float, size: float, is_long: bool = True) -> bool:
         """Enter a new position"""
         if self.position is not None:
             return False
-        
+
         entry_atr = self.atr_calculator.get_atr()
         effective_price = price + (self.slippage if is_long else -self.slippage)
         commission = abs(size * effective_price * self.commission_rate)
-        
+
         self.position = TradePosition(
-            entry_price=effective_price,
-            size=size,
-            entry_atr=entry_atr,
-            is_long=is_long
+            entry_price=effective_price, size=size, entry_atr=entry_atr, is_long=is_long
         )
-        
+
         # Deduct commission from PnL
         self.pnl -= commission
         return True
-    
+
     def calculate_trailing_stop_distance(self) -> float:
         """Calculate trailing stop distance based on configuration"""
         if not self.position:
             return 0.0
-        
-        trailing_config = self.config.exits['trailing']
-        
+
+        trailing_config = self.config.exits["trailing"]
+
         # Check if trailing stops are enabled
-        if not trailing_config.get('enabled', True):
+        if not trailing_config.get("enabled", True):
             return 0.0
-        
-        if trailing_config['type'] != 'atr':
+
+        if trailing_config["type"] != "atr":
             return 0.0
-        
-        if trailing_config['use_dynamic_atr']:
-            min_samples = trailing_config['dynamic_atr_min_samples']
+
+        if trailing_config["use_dynamic_atr"]:
+            min_samples = trailing_config["dynamic_atr_min_samples"]
             if self.atr_calculator.has_enough_samples(min_samples):
                 # Use latest ATR average
                 return self.atr_calculator.get_atr()
@@ -137,16 +131,16 @@ class EnhancedStrategy:
         else:
             # Use entry ATR
             return self.position.entry_atr
-    
-    def update_trailing_stop(self, current_price: float) -> Optional[float]:
+
+    def update_trailing_stop(self, current_price: float) -> float | None:
         """Update trailing stop based on current price and ATR"""
         if not self.position:
             return None
-        
+
         distance = self.calculate_trailing_stop_distance()
         if distance <= 0:
             return None
-        
+
         if self.position.is_long:
             # For long positions, stop trails below current price
             new_stop = current_price - distance
@@ -157,89 +151,97 @@ class EnhancedStrategy:
             new_stop = current_price + distance
             if self.position.stop_price is None or new_stop < self.position.stop_price:
                 self.position.stop_price = new_stop
-        
+
         return self.position.stop_price
-    
+
     def check_stop_hit(self, price: float) -> bool:
         """Check if stop loss has been hit"""
         if not self.position or self.position.stop_price is None:
             return False
-        
+
         if self.position.is_long:
             return price <= self.position.stop_price
         else:
             return price >= self.position.stop_price
-    
-    def exit_position(self, price: float, reason: str = "manual") -> Dict[str, float]:
+
+    def exit_position(self, price: float, reason: str = "manual") -> dict[str, float]:
         """Exit the current position and calculate PnL"""
         if not self.position:
             return {"pnl": 0.0, "r_multiple": 0.0}
-        
-        effective_price = price + (-self.slippage if self.position.is_long else self.slippage)
+
+        effective_price = price + (
+            -self.slippage if self.position.is_long else self.slippage
+        )
         commission = abs(self.position.size * effective_price * self.commission_rate)
-        
+
         # Calculate position PnL
         if self.position.is_long:
-            position_pnl = self.position.size * (effective_price - self.position.entry_price)
+            position_pnl = self.position.size * (
+                effective_price - self.position.entry_price
+            )
         else:
-            position_pnl = self.position.size * (self.position.entry_price - effective_price)
-        
+            position_pnl = self.position.size * (
+                self.position.entry_price - effective_price
+            )
+
         # Calculate R multiple (profit/loss per share relative to risk per share)
         risk_per_share = self.position.entry_atr if self.position.entry_atr > 0 else 1.0
-        price_change_per_share = position_pnl / self.position.size if self.position.size > 0 else 0.0
-        r_multiple = price_change_per_share / risk_per_share if risk_per_share > 0 else 0.0
-        
+        price_change_per_share = (
+            position_pnl / self.position.size if self.position.size > 0 else 0.0
+        )
+        r_multiple = (
+            price_change_per_share / risk_per_share if risk_per_share > 0 else 0.0
+        )
+
         # Update total PnL
         self.pnl += position_pnl - commission
-        
+
         result = {
             "pnl": position_pnl,
             "r_multiple": r_multiple,
             "total_pnl": self.pnl,
             "commission": commission,
-            "reason": reason
+            "reason": reason,
         }
-        
+
         self.position = None
         return result
-    
-    def process_bar(self, high: float, low: float, close: float, prev_close: float) -> Dict[str, Any]:
+
+    def process_bar(
+        self, high: float, low: float, close: float, prev_close: float
+    ) -> dict[str, Any]:
         """Process a new price bar"""
         # Update ATR
         atr = self.update_atr(high, low, prev_close)
-        
-        result = {
-            "atr": atr,
-            "stop_hit": False,
-            "exit_result": None
-        }
-        
+
+        result = {"atr": atr, "stop_hit": False, "exit_result": None}
+
         if self.position:
             # Update trailing stop
             stop_price = self.update_trailing_stop(close)
             result["stop_price"] = stop_price
-            
+
             # Check if stop was hit during this bar
             if self.check_stop_hit(low if self.position.is_long else high):
                 exit_price = self.position.stop_price
                 result["exit_result"] = self.exit_position(exit_price, "stop_loss")
                 result["stop_hit"] = True
-        
+
         return result
-    
-    def get_position_info(self) -> Optional[Dict[str, Any]]:
+
+    def get_position_info(self) -> dict[str, Any] | None:
         """Get current position information"""
         if not self.position:
             return None
-        
+
         return {
             "entry_price": self.position.entry_price,
             "size": self.position.size,
             "entry_atr": self.position.entry_atr,
             "stop_price": self.position.stop_price,
-            "is_long": self.position.is_long
+            "is_long": self.position.is_long,
         }
-    
+
     def get_realized_pnl(self) -> float:
         """Get total realized PnL"""
         return self.pnl
@@ -247,17 +249,20 @@ class EnhancedStrategy:
 
 # Additional classes needed for test compatibility
 
+
 @dataclass
 class Position:
     """Position tracking for broker interface"""
+
     symbol: str
     qty: float
     avg_price: float
 
 
-@dataclass 
+@dataclass
 class Fill:
     """Represents a trade execution fill"""
+
     symbol: str
     side: str  # "BUY" or "SELL"
     qty: float
@@ -267,6 +272,7 @@ class Fill:
 @dataclass
 class Bar:
     """Represents a price bar/candle"""
+
     symbol: str
     datetime: Any  # datetime object
     open: float
@@ -278,59 +284,61 @@ class Bar:
 
 class BrokerInterface:
     """Abstract interface for broker operations"""
-    
+
     def __init__(self, starting_equity: float = 100_000):
         self._equity = starting_equity
-        self._positions: Dict[str, Position] = {}
-    
+        self._positions: dict[str, Position] = {}
+
     @property
     def equity(self) -> float:
         return self._equity
-    
-    def get_position(self, symbol: str) -> Optional[Position]:
+
+    def get_position(self, symbol: str) -> Position | None:
         return self._positions.get(symbol)
-    
-    def open_positions(self) -> List[Position]:
+
+    def open_positions(self) -> list[Position]:
         return list(self._positions.values())
-    
-    def execute(self, orders, slippage_model=None, commission_model=None) -> List[Fill]:
+
+    def execute(self, orders, slippage_model=None, commission_model=None) -> list[Fill]:
         return []
-    
+
     def flatten_all(self) -> None:
         self._positions.clear()
 
 
 class MetricsTracker:
     """Tracks trading metrics and open trades"""
-    
+
     def __init__(self):
-        self._open_trades: Dict[str, Any] = {}
-    
-    def get_open_trade(self, symbol: str) -> Optional[Any]:
+        self._open_trades: dict[str, Any] = {}
+
+    def get_open_trade(self, symbol: str) -> Any | None:
         return self._open_trades.get(symbol)
 
 
 class ATRTracker:
     """Tracks ATR values"""
-    
+
     def __init__(self):
-        self.tr_values: Dict[str, Any] = {}
+        self.tr_values: dict[str, Any] = {}
 
 
 class EnhancementsContext:
     """Main context for enhanced trading strategy"""
-    
-    def __init__(self, config: Dict[str, Any], broker: BrokerInterface, indicator_fn):
+
+    def __init__(self, config: dict[str, Any], broker: BrokerInterface, indicator_fn):
         self.config = config
-        self.broker = broker  
+        self.broker = broker
         self.indicator_fn = indicator_fn
         self.metrics_tracker = MetricsTracker()
         self.atr_tracker = ATRTracker()
-    
+
     def on_bar_start(self, bar: Bar, broker: BrokerInterface) -> None:
         """Called at the start of each bar"""
         pass
-    
-    def process_symbol(self, symbol: str, bar: Bar, broker: BrokerInterface, adv_lookup) -> List[Fill]:
+
+    def process_symbol(
+        self, symbol: str, bar: Bar, broker: BrokerInterface, adv_lookup
+    ) -> list[Fill]:
         """Process a symbol for the given bar"""
         return []

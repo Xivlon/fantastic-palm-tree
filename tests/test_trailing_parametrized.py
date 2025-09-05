@@ -1,6 +1,6 @@
 import pytest
 
-from fantastic_palm_tree import StrategyConfig, EnhancedStrategy
+from fantastic_palm_tree import EnhancedStrategy, StrategyConfig
 
 
 @pytest.mark.parametrize("use_dynamic,min_samples", [(False, 1), (True, 1), (True, 3)])
