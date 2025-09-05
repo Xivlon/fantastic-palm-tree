@@ -6,7 +6,7 @@ kill-switch mechanisms, and Schwab broker integration.
 """
 
 from .core import BacktestEngine, Strategy, DataHandler, Portfolio
-from .metrics import MetricsCalculator, PerformanceMetrics
+from .metrics import MetricsCalculator, PerformanceMetrics, MetricsPipeline
 from .sweep import ParameterOptimizer, GridSearchOptimizer, ParameterSpace
 from .killswitch import KillSwitchManager, create_default_kill_switches
 from .brokers import SchwabBroker, BaseBroker
@@ -24,6 +24,7 @@ __all__ = [
     # Metrics
     'MetricsCalculator',
     'PerformanceMetrics',
+    'MetricsPipeline',
     
     # Parameter optimization
     'ParameterOptimizer',
