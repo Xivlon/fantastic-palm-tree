@@ -7,7 +7,8 @@ the new minimal interfaces, demonstrating backward compatibility.
 
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from interfaces import (
     StrategyProtocol, EngineProtocol, OrderProtocol, 
