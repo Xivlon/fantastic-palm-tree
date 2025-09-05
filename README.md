@@ -1,5 +1,10 @@
 # Fantastic Palm Tree - Advanced Backtesting Framework
 
+[![CI](https://github.com/Xivlon/fantastic-palm-tree/workflows/CI/badge.svg)](https://github.com/Xivlon/fantastic-palm-tree/actions)
+[![codecov](https://codecov.io/gh/Xivlon/fantastic-palm-tree/branch/main/graph/badge.svg)](https://codecov.io/gh/Xivlon/fantastic-palm-tree)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Code style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+
 A comprehensive backtesting framework with advanced metrics, parameter sweeping, kill-switch mechanisms, and Schwab broker integration.
 
 ## Features
@@ -59,5 +64,33 @@ pip install -e .
 ## Development
 
 ```bash
+# Install with development dependencies
 pip install -e ".[dev]"
+
+# Run tests
 pytest
+
+# Run tests with coverage
+pytest --cov=. --cov-report=term-missing
+
+# Run linting
+ruff check .
+
+# Run formatting
+ruff format .
+
+# Check types (currently disabled due to package naming)
+# mypy fantastic_palm_tree/
+```
+
+### Continuous Integration
+
+This project uses GitHub Actions for continuous integration. The CI pipeline:
+
+- Tests on Python 3.10, 3.11, and 3.12
+- Runs ruff for linting and formatting checks
+- Executes the full test suite with pytest
+- Measures code coverage and enforces minimum thresholds
+- Uploads coverage reports to Codecov
+
+All pull requests must pass the CI checks before merging.

@@ -1,7 +1,7 @@
 """
 Fantastic Palm Tree - Advanced Backtesting Framework
 
-A comprehensive backtesting framework with advanced metrics, parameter sweeping, 
+A comprehensive backtesting framework with advanced metrics, parameter sweeping,
 kill-switch mechanisms, and Schwab broker integration.
 """
 
