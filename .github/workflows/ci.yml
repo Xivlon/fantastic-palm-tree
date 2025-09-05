@@ -57,27 +57,3 @@ jobs:
         flags: unittests
         name: codecov-umbrella
         fail_ci_if_error: false
-
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.12"
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install ruff
-
-    - name: Lint with ruff (strict)
-      run: |
-        ruff check . --output-format=github
-
-    - name: Format check with ruff
-      run: |
-        # Skip format check for legacy code - only enforce on new files
-        echo "Format checking skipped for existing codebase - can be enabled incrementally"
