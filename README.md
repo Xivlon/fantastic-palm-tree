@@ -66,46 +66,5 @@ pip install -e .
 ### Setup
 
 ```bash
+# Install with development dependencies
 pip install -e ".[dev]"
-```
-
-### Running Tests
-
-```bash
-# Run all tests
-pytest
-
-# Run tests with coverage
-pytest --cov=fantastic_palm_tree --cov=backtesting --cov-report=term-missing
-
-# Run specific test file
-pytest tests/test_trailing_parametrized.py -v
-```
-
-### Code Quality
-
-This project uses several tools to maintain code quality:
-
-```bash
-# Linting with ruff
-ruff check .
-
-# Code formatting with ruff
-ruff format .
-
-# Type checking with mypy
-python -m mypy --package fantastic_palm_tree
-python -m mypy backtesting/
-```
-
-### CI/CD
-
-The project includes comprehensive CI workflows that run on Python 3.10-3.12:
-
-- **Linting**: `ruff check` for code style and quality
-- **Formatting**: `ruff format` for consistent code formatting  
-- **Type Checking**: `mypy` for static type analysis
-- **Testing**: `pytest` with coverage reporting
-- **Coverage Goal**: 75% (currently ~10%, help us improve!)
-
-All checks must pass for pull requests to be merged.

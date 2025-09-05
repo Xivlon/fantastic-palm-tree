@@ -5,11 +5,16 @@ A comprehensive backtesting framework with advanced metrics, parameter sweeping,
 kill-switch mechanisms, and Schwab broker integration.
 """
 
-from .brokers import BaseBroker, SchwabBroker
-from .core import BacktestEngine, DataHandler, Portfolio, Strategy
-from .killswitch import KillSwitchManager, create_default_kill_switches
+from .core import BacktestEngine, Strategy, DataHandler, Portfolio
 from .metrics import MetricsCalculator, PerformanceMetrics
-from .sweep import GridSearchOptimizer, ParameterOptimizer, ParameterSpace
+from .sweep import ParameterOptimizer, GridSearchOptimizer, ParameterSpace
+from .killswitch import KillSwitchManager, create_default_kill_switches
+
+try:
+    from .broker import SchwabBroker, BaseBroker
+except ImportError:
+    SchwabBroker = None
+    BaseBroker = None
 
 __version__ = "0.1.0"
 __author__ = "Trading Team"
@@ -30,7 +35,7 @@ __all__ = [
     # Risk management
     "KillSwitchManager",
     "create_default_kill_switches",
-    # Broker integration
-    "SchwabBroker",
-    "BaseBroker",
 ]
+
+if SchwabBroker and BaseBroker:
+    __all__ += ["SchwabBroker", "BaseBroker"]
