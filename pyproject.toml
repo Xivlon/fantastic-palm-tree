@@ -6,3 +6,7 @@ authors = []
 
 [tool.setuptools]
 packages = ["fantastic_palm_tree"]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
