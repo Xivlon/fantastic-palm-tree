@@ -1,5 +1,6 @@
 name: CI
-
+__pycache__/
+*.pyc
 on:
   push:
     branches: [ main, develop ]
