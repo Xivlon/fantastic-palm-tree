@@ -6,7 +6,7 @@ This test checks core compatibility without external dependencies.
 
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# NOTE: Removed fragile sys.path manipulation. Run this test with `python -m test_simple_integration` from the project root.
 
 from interfaces import (
     StrategyProtocol, OrderProtocol, PositionProtocol, TradeResultProtocol
