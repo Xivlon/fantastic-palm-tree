@@ -83,7 +83,7 @@ exclude_lines = [
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
 ]
-fail_under = 75
+fail_under = 75  # Aspirational target - current coverage is ~10%
 show_missing = true
 
 [tool.ruff]

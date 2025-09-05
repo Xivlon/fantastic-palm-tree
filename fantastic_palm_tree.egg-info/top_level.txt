@@ -1,2 +1,0 @@
-backtesting
-fantastic_palm_tree

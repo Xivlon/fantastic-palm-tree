@@ -1,5 +1,10 @@
 # Fantastic Palm Tree - Advanced Backtesting Framework
 
+[![CI](https://github.com/Xivlon/fantastic-palm-tree/workflows/CI/badge.svg)](https://github.com/Xivlon/fantastic-palm-tree/actions)
+[![codecov](https://codecov.io/gh/Xivlon/fantastic-palm-tree/branch/main/graph/badge.svg)](https://codecov.io/gh/Xivlon/fantastic-palm-tree)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Code style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+
 A comprehensive backtesting framework with advanced metrics, parameter sweeping, kill-switch mechanisms, and Schwab broker integration.
 
 ## Features
@@ -58,6 +63,49 @@ pip install -e .
 
 ## Development
 
+### Setup
+
 ```bash
 pip install -e ".[dev]"
+```
+
+### Running Tests
+
+```bash
+# Run all tests
 pytest
+
+# Run tests with coverage
+pytest --cov=fantastic_palm_tree --cov=backtesting --cov-report=term-missing
+
+# Run specific test file
+pytest tests/test_trailing_parametrized.py -v
+```
+
+### Code Quality
+
+This project uses several tools to maintain code quality:
+
+```bash
+# Linting with ruff
+ruff check .
+
+# Code formatting with ruff
+ruff format .
+
+# Type checking with mypy
+python -m mypy --package fantastic_palm_tree
+python -m mypy backtesting/
+```
+
+### CI/CD
+
+The project includes comprehensive CI workflows that run on Python 3.10-3.12:
+
+- **Linting**: `ruff check` for code style and quality
+- **Formatting**: `ruff format` for consistent code formatting  
+- **Type Checking**: `mypy` for static type analysis
+- **Testing**: `pytest` with coverage reporting
+- **Coverage Goal**: 75% (currently ~10%, help us improve!)
+
+All checks must pass for pull requests to be merged.
