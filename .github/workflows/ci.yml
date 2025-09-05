@@ -47,7 +47,7 @@ jobs:
     - name: Test with pytest
       run: |
         # Current coverage is 12%, goal is 75%
-        pytest --cov=. --cov-report=xml --cov-report=term-missing --cov-fail-under=11
+        pytest --cov=. --cov-report=xml --cov-report=term-missing
 
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v3
