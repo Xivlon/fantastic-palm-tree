@@ -111,6 +111,14 @@ Thumbs.db
 *.pyc
 *.pyo
 
+# Trading results and demo files
+demo_results/
+live_demo_results/
+live_trading_results/
+trading_results/
+*bridge_report*.txt
+*.csv
+
 # Node.js / Next.js Dashboard
 node_modules/
 .next/

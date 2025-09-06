@@ -1,8 +1,11 @@
 """Paper broker implementation for testing and simulation."""
 
+import csv
 import logging
 from datetime import datetime
 from typing import Any
+import pandas as pd
+from pathlib import Path
 
 from .base import (
     AccountInfo,
@@ -25,6 +28,14 @@ class PaperBroker(BaseBroker):
         self.positions: dict[str, Position] = {}
         self.orders: list[BrokerOrder] = []
         self.order_counter = 0
+        
+        # P&L tracking
+        self.pnl_history: list[dict[str, Any]] = []
+        self.trade_history: list[dict[str, Any]] = []
+        self.portfolio_history: list[dict[str, Any]] = []
+        
+        # Track initial state
+        self._add_portfolio_point()
         
         # Setup logging
         self.logger = logging.getLogger(f"PaperBroker-{account_id}")
@@ -164,6 +175,12 @@ class PaperBroker(BaseBroker):
             f"ORDER FILLED: {order.side.value} {order.quantity} {order.symbol} "
             f"@ ${fill_price:.2f}. Cash balance: ${self.cash_balance:.2f}"
         )
+        
+        # Record trade for history tracking
+        self._record_trade(order, fill_price)
+        
+        # Update portfolio history
+        self._add_portfolio_point()
 
     async def cancel_order(self, order_id: str) -> bool:
         """Cancel an order."""
@@ -236,3 +253,129 @@ class PaperBroker(BaseBroker):
                     pos.day_change_percent = (pos.day_change / old_market_value) * 100
                 else:
                     pos.day_change_percent = 0.0
+        
+        # Update portfolio history after price updates
+        self._add_portfolio_point()
+
+    def _record_trade(self, order: BrokerOrder, fill_price: float) -> None:
+        """Record trade for history tracking."""
+        trade_record = {
+            'timestamp': datetime.now(),
+            'symbol': order.symbol,
+            'side': order.side.value,
+            'quantity': order.quantity,
+            'fill_price': fill_price,
+            'total_value': order.quantity * fill_price,
+            'order_id': order.order_id,
+            'cash_balance_after': self.cash_balance
+        }
+        self.trade_history.append(trade_record)
+
+    def _add_portfolio_point(self) -> None:
+        """Add current portfolio state to history."""
+        total_value = self.cash_balance + sum(pos.market_value for pos in self.positions.values())
+        unrealized_pnl = sum(pos.unrealized_pnl for pos in self.positions.values())
+        
+        portfolio_point = {
+            'timestamp': datetime.now(),
+            'cash_balance': self.cash_balance,
+            'total_portfolio_value': total_value,
+            'unrealized_pnl': unrealized_pnl,
+            'total_return': (total_value - self.initial_cash) / self.initial_cash * 100,
+            'positions_count': len(self.positions)
+        }
+        self.portfolio_history.append(portfolio_point)
+
+    def get_portfolio_metrics(self) -> dict[str, Any]:
+        """Calculate and return comprehensive portfolio metrics."""
+        if not self.portfolio_history:
+            return {}
+        
+        df = pd.DataFrame(self.portfolio_history)
+        df['timestamp'] = pd.to_datetime(df['timestamp'])
+        df.set_index('timestamp', inplace=True)
+        
+        # Calculate returns
+        returns = df['total_portfolio_value'].pct_change().dropna()
+        
+        # Basic metrics
+        current_value = df['total_portfolio_value'].iloc[-1]
+        total_return = (current_value - self.initial_cash) / self.initial_cash
+        
+        # Risk metrics
+        if len(returns) > 1:
+            volatility = returns.std() * (252 ** 0.5)  # Annualized volatility
+            sharpe_ratio = (returns.mean() * 252) / (returns.std() * (252 ** 0.5)) if returns.std() > 0 else 0
+            
+            # Drawdown calculation
+            peak = df['total_portfolio_value'].expanding().max()
+            drawdown = (df['total_portfolio_value'] - peak) / peak
+            max_drawdown = drawdown.min()
+        else:
+            volatility = 0
+            sharpe_ratio = 0
+            max_drawdown = 0
+        
+        return {
+            'initial_value': self.initial_cash,
+            'current_value': current_value,
+            'total_return': total_return,
+            'total_return_percent': total_return * 100,
+            'volatility': volatility,
+            'sharpe_ratio': sharpe_ratio,
+            'max_drawdown': max_drawdown,
+            'max_drawdown_percent': max_drawdown * 100,
+            'total_trades': len(self.trade_history),
+            'current_positions': len(self.positions),
+            'unrealized_pnl': sum(pos.unrealized_pnl for pos in self.positions.values())
+        }
+
+    def export_to_csv(self, output_dir: str = "trading_results") -> dict[str, str]:
+        """Export trading data to CSV files."""
+        output_path = Path(output_dir)
+        output_path.mkdir(exist_ok=True)
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        files_created = {}
+        
+        # Export portfolio history (equity curve)
+        if self.portfolio_history:
+            portfolio_df = pd.DataFrame(self.portfolio_history)
+            portfolio_file = output_path / f"portfolio_history_{timestamp}.csv"
+            portfolio_df.to_csv(portfolio_file, index=False)
+            files_created['portfolio_history'] = str(portfolio_file)
+        
+        # Export trade history
+        if self.trade_history:
+            trades_df = pd.DataFrame(self.trade_history)
+            trades_file = output_path / f"trade_history_{timestamp}.csv"
+            trades_df.to_csv(trades_file, index=False)
+            files_created['trade_history'] = str(trades_file)
+        
+        # Export current positions
+        if self.positions:
+            positions_data = []
+            for symbol, pos in self.positions.items():
+                positions_data.append({
+                    'symbol': symbol,
+                    'quantity': pos.quantity,
+                    'average_price': pos.average_price,
+                    'market_value': pos.market_value,
+                    'unrealized_pnl': pos.unrealized_pnl,
+                    'day_change': pos.day_change,
+                    'day_change_percent': pos.day_change_percent
+                })
+            positions_df = pd.DataFrame(positions_data)
+            positions_file = output_path / f"positions_{timestamp}.csv"
+            positions_df.to_csv(positions_file, index=False)
+            files_created['positions'] = str(positions_file)
+        
+        # Export summary metrics
+        metrics = self.get_portfolio_metrics()
+        if metrics:
+            metrics_df = pd.DataFrame([metrics])
+            metrics_file = output_path / f"portfolio_metrics_{timestamp}.csv"
+            metrics_df.to_csv(metrics_file, index=False)
+            files_created['metrics'] = str(metrics_file)
+        
+        return files_created
