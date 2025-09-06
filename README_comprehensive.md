@@ -563,14 +563,13 @@ config = StrategyConfig(
     }
 )
 
-# Static ATR trailing stops
-static_config = StrategyConfig(
+# Percentage-based trailing stops
+percentage_config = StrategyConfig(
     exits={
         "trailing": {
             "enabled": True,
-            "type": "atr",              # Use ATR for distance calculation
-            "use_dynamic_atr": False,   # Use entry ATR (static)
-            "dynamic_atr_min_samples": 1,  # Not used when static
+            "type": "percentage",       # Use fixed percentage
+            "distance": 0.05,          # 5% trailing distance
         }
     }
 )
