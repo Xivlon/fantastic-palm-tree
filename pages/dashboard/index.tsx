@@ -13,6 +13,7 @@ const DashboardPage: React.FC = () => {
   const [data, setData] = useState<DashboardData>(mockDashboardData);
   const [selectedBacktest, setSelectedBacktest] = useState<BacktestResult | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isRunningBacktest, setIsRunningBacktest] = useState(false);
 
   useEffect(() => {
     // Set initial selected backtest
@@ -21,23 +22,54 @@ const DashboardPage: React.FC = () => {
     }
   }, [data.results, selectedBacktest]);
 
+  useEffect(() => {
+    // Load initial data from backend or mock
+    const loadInitialData = async () => {
+      if (process.env.USE_LOCAL_MOCK === 'true') {
+        setData({ ...mockDashboardData });
+      } else {
+        try {
+          const response = await fetch('http://localhost:8000/api/backtest?endpoint=dashboard');
+          if (response.ok) {
+            const freshData = await response.json();
+            setData(freshData);
+            console.log('✅ Initial data loaded from Python backend');
+          } else {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+        } catch (error) {
+          console.error('❌ Failed to load from Python backend, using mock data:', error);
+          setData({ ...mockDashboardData });
+        }
+      }
+    };
+
+    loadInitialData();
+  }, []); // Run once on mount
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
     
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // In a real implementation, this would fetch fresh data from the API
+    // Check if we should use local mock or connect to Python backend
     if (process.env.USE_LOCAL_MOCK === 'true') {
       setData({ ...mockDashboardData });
     } else {
-      // Fetch from actual API
+      // Connect to Python backend API
       try {
-        const response = await fetch('/api/backtest?endpoint=dashboard');
+        const response = await fetch('http://localhost:8000/api/backtest?endpoint=dashboard');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const freshData = await response.json();
         setData(freshData);
+        console.log('✅ Successfully connected to Python backend:', freshData.results?.length || 0, 'backtests loaded');
       } catch (error) {
-        console.error('Failed to refresh data:', error);
+        console.error('❌ Failed to connect to Python backend, falling back to mock data:', error);
+        // Fallback to mock data if Python backend is not available
+        setData({ ...mockDashboardData });
       }
     }
     
@@ -46,6 +78,48 @@ const DashboardPage: React.FC = () => {
 
   const handleBacktestSelect = (backtest: BacktestResult) => {
     setSelectedBacktest(backtest);
+  };
+
+  const handleRunNewBacktest = async () => {
+    if (process.env.USE_LOCAL_MOCK === 'true') {
+      console.log('Mock mode - would run new backtest');
+      return;
+    }
+
+    setIsRunningBacktest(true);
+    try {
+      const response = await fetch('http://localhost:8000/api/backtest', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: `ATR Strategy ${new Date().toLocaleTimeString()}`,
+          strategy: 'ATR_BREAKOUT',
+          startDate: '2023-01-01',
+          endDate: '2023-12-31',
+          initialCapital: 100000,
+          parameters: {
+            atr_period: 14
+          }
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ New backtest started:', result.backtest.id);
+        
+        // Refresh data to show the new running backtest
+        setTimeout(() => {
+          handleRefresh();
+        }, 1000);
+      } else {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('❌ Failed to start new backtest:', error);
+    }
+    setIsRunningBacktest(false);
   };
 
   return (
@@ -58,16 +132,35 @@ const DashboardPage: React.FC = () => {
             <p className="text-gray-600 mt-1">
               Monitor your trading strategies and analyze performance metrics
             </p>
+            <div className="mt-2 flex items-center space-x-2">
+              <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                process.env.USE_LOCAL_MOCK === 'true' 
+                  ? 'bg-yellow-100 text-yellow-800' 
+                  : 'bg-green-100 text-green-800'
+              }`}>
+                {process.env.USE_LOCAL_MOCK === 'true' ? '🔄 Mock Data Mode' : '🔥 Live Backend Connected'}
+              </div>
+            </div>
           </div>
           
-          <button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
-          >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
-          </button>
+          <div className="space-x-4">
+            <button
+              onClick={handleRunNewBacktest}
+              disabled={isRunningBacktest}
+              className="bg-success-600 hover:bg-success-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+            >
+              {isRunningBacktest ? 'Running...' : 'Run New Backtest'}
+            </button>
+            
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
+          </div>
         </div>
 
         {/* Quick Stats */}
