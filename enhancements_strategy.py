@@ -4,6 +4,7 @@ Enhanced Trading Strategy with Dynamic ATR Trailing Configuration
 This module implements trading strategy enhancements with dynamic ATR trailing stops.
 """
 
+from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -79,24 +80,57 @@ class EnhancedStrategy:
         self.pnl = 0.0
         self.commission_rate = 0.0
         self.slippage = 0.0
+        self._execution_engine: ExecutionEngine | None = None
+
+    def set_execution_engine(self, execution_engine: ExecutionEngine) -> None:
+        """Set execution engine for realistic order processing"""
+        self._execution_engine = execution_engine
 
     def set_fees(self, commission_rate: float = 0.0, slippage: float = 0.0):
-        """Set commission and slippage rates"""
+        """Set commission and slippage rates (legacy method for backward compatibility)"""
         self.commission_rate = commission_rate
         self.slippage = slippage
+
+    def configure_realistic_execution(self, 
+                                    slippage_config: dict | None = None,
+                                    commission_config: dict | None = None,
+                                    spread_bps: float = 0) -> None:
+        """Configure realistic execution with advanced models"""
+        if slippage_config or commission_config:
+            slippage_model = create_slippage_model(slippage_config or {})
+            commission_model = create_commission_model(commission_config or {})
+            
+            self._execution_engine = ExecutionEngine(
+                slippage_model=slippage_model,
+                commission_model=commission_model,
+                spread_bps=spread_bps
+            )
 
     def update_atr(self, high: float, low: float, prev_close: float) -> float:
         """Update ATR calculation with new bar data"""
         return self.atr_calculator.add_bar(high, low, prev_close)
 
     def enter_position(self, price: float, size: float, is_long: bool = True) -> bool:
-        """Enter a new position"""
+        """Enter a new position with realistic execution"""
         if self.position is not None:
             return False
 
         entry_atr = self.atr_calculator.get_atr()
-        effective_price = price + (self.slippage if is_long else -self.slippage)
-        commission = abs(size * effective_price * self.commission_rate)
+        
+        # Use ExecutionEngine if available for realistic execution
+        if self._execution_engine:
+            order = Order(
+                symbol="DEFAULT",  # Symbol would be passed in real implementation
+                side="BUY" if is_long else "SELL",
+                qty=size
+            )
+            fill = self._execution_engine.execute_order(order, price)
+            effective_price = fill.price
+            commission = fill.commission
+        else:
+            # Legacy execution for backward compatibility
+            effective_price = price + (self.slippage if is_long else -self.slippage)
+            commission = abs(size * effective_price * self.commission_rate)
 
         self.position = TradePosition(
             entry_price=effective_price, size=size, entry_atr=entry_atr, is_long=is_long
@@ -165,14 +199,28 @@ class EnhancedStrategy:
             return price >= self.position.stop_price
 
     def exit_position(self, price: float, reason: str = "manual") -> dict[str, float]:
-        """Exit the current position and calculate PnL"""
+        """Exit the current position and calculate PnL with realistic execution"""
         if not self.position:
             return {"pnl": 0.0, "r_multiple": 0.0}
 
-        effective_price = price + (
-            -self.slippage if self.position.is_long else self.slippage
-        )
-        commission = abs(self.position.size * effective_price * self.commission_rate)
+        # Use ExecutionEngine if available for realistic execution
+        if self._execution_engine:
+            # Create exit order (opposite side of position)
+            exit_side = "SELL" if self.position.is_long else "BUY"
+            order = Order(
+                symbol="DEFAULT",  # Symbol would be passed in real implementation
+                side=exit_side,
+                qty=self.position.size
+            )
+            fill = self._execution_engine.execute_order(order, price)
+            effective_price = fill.price
+            commission = fill.commission
+        else:
+            # Legacy execution for backward compatibility
+            effective_price = price + (
+                -self.slippage if self.position.is_long else self.slippage
+            )
+            commission = abs(self.position.size * effective_price * self.commission_rate)
 
         # Calculate position PnL
         if self.position.is_long:
@@ -267,6 +315,7 @@ class Fill:
     side: str  # "BUY" or "SELL"
     qty: float
     price: float
+    commission: float = 0.0  # Commission charged for this fill
 
 
 @dataclass
@@ -282,12 +331,273 @@ class Bar:
     volume: float
 
 
+@dataclass 
+class Order:
+    """Represents a trading order"""
+    
+    symbol: str
+    side: str  # "BUY" or "SELL"
+    qty: float
+    order_type: str = "MARKET"  # "MARKET", "LIMIT", "STOP"
+    price: float | None = None
+    
+
+class SlippageModel:
+    """Base class for slippage models"""
+    
+    def calculate_slippage(self, order: Order, market_price: float, volume: float = 0) -> float:
+        """Calculate slippage for an order. Returns adjustment to price."""
+        return 0.0
+
+
+class FixedSlippageModel(SlippageModel):
+    """Fixed slippage model - constant dollar amount per share"""
+    
+    def __init__(self, slippage_amount: float = 0.01):
+        self.slippage_amount = slippage_amount
+    
+    def calculate_slippage(self, order: Order, market_price: float, volume: float = 0) -> float:
+        # Positive slippage for buys (pay more), negative for sells (receive less)
+        return self.slippage_amount if order.side == "BUY" else -self.slippage_amount
+
+
+class PercentageSlippageModel(SlippageModel):
+    """Percentage-based slippage model"""
+    
+    def __init__(self, slippage_bps: float = 10):  # basis points
+        self.slippage_bps = slippage_bps
+    
+    def calculate_slippage(self, order: Order, market_price: float, volume: float = 0) -> float:
+        slippage_rate = self.slippage_bps / 10000  # Convert bps to decimal
+        slippage = market_price * slippage_rate
+        return slippage if order.side == "BUY" else -slippage
+
+
+class VolumeBasedSlippageModel(SlippageModel):
+    """Volume-dependent slippage model with tiered structure"""
+    
+    def __init__(self, tiers: list[dict]):
+        """
+        tiers: List of dicts with keys 'adv_threshold' and 'bps'
+        e.g., [{"adv_threshold": 0, "bps": 5}, {"adv_threshold": 1000000, "bps": 10}]
+        """
+        self.tiers = sorted(tiers, key=lambda x: x['adv_threshold'])
+    
+    def calculate_slippage(self, order: Order, market_price: float, volume: float = 0) -> float:
+        # Find appropriate tier based on volume
+        slippage_bps = 0
+        for tier in reversed(self.tiers):
+            if volume >= tier['adv_threshold']:
+                slippage_bps = tier['bps']
+                break
+        
+        if slippage_bps == 0:
+            return 0.0
+            
+        slippage_rate = slippage_bps / 10000
+        slippage = market_price * slippage_rate
+        return slippage if order.side == "BUY" else -slippage
+
+
+class CommissionModel:
+    """Base class for commission models"""
+    
+    def calculate_commission(self, order: Order, fill_price: float) -> float:
+        """Calculate commission for an order. Returns commission amount."""
+        return 0.0
+
+
+class PerShareCommissionModel(CommissionModel):
+    """Per-share commission model"""
+    
+    def __init__(self, per_share: float = 0.005, min_commission: float = 1.0):
+        self.per_share = per_share
+        self.min_commission = min_commission
+    
+    def calculate_commission(self, order: Order, fill_price: float) -> float:
+        commission = order.qty * self.per_share
+        return max(commission, self.min_commission)
+
+
+class PercentageCommissionModel(CommissionModel):
+    """Percentage-based commission model"""
+    
+    def __init__(self, rate: float = 0.001, min_commission: float = 1.0):  # 0.1% default
+        self.rate = rate
+        self.min_commission = min_commission
+    
+    def calculate_commission(self, order: Order, fill_price: float) -> float:
+        commission = order.qty * fill_price * self.rate
+        return max(commission, self.min_commission)
+
+
+class TieredCommissionModel(CommissionModel):
+    """Tiered commission model based on trade size"""
+    
+    def __init__(self, tiers: list[dict]):
+        """
+        tiers: List of dicts with keys 'threshold' and 'rate'
+        e.g., [{"threshold": 0, "rate": 0.001}, {"threshold": 10000, "rate": 0.0005}]
+        """
+        self.tiers = sorted(tiers, key=lambda x: x['threshold'])
+    
+    def calculate_commission(self, order: Order, fill_price: float) -> float:
+        trade_value = order.qty * fill_price
+        
+        # Find appropriate tier
+        rate = 0.001  # default
+        for tier in reversed(self.tiers):
+            if trade_value >= tier['threshold']:
+                rate = tier['rate']
+                break
+        
+        return trade_value * rate
+
+
+class MarketImpactModel:
+    """Model market impact for large orders"""
+    
+    def calculate_impact(self, order: Order, volume: float, market_price: float) -> float:
+        """Calculate additional price impact for large orders"""
+        return 0.0
+
+
+class LinearMarketImpactModel(MarketImpactModel):
+    """Linear market impact based on order size relative to volume"""
+    
+    def __init__(self, impact_rate: float = 0.0001):
+        """
+        impact_rate: Price impact per dollar of order relative to daily volume
+        e.g., 0.0001 means $1M order in $1B volume stock has 0.01% impact
+        """
+        self.impact_rate = impact_rate
+    
+    def calculate_impact(self, order: Order, volume: float, market_price: float) -> float:
+        if volume <= 0:
+            return 0.0
+            
+        order_value = order.qty * market_price
+        volume_value = volume * market_price  # Approximate daily volume value
+        
+        if volume_value <= 0:
+            return 0.0
+            
+        # Impact proportional to order size relative to volume
+        impact_ratio = order_value / volume_value
+        impact = market_price * impact_ratio * self.impact_rate
+        
+        # Impact direction depends on order side
+        return impact if order.side == "BUY" else -impact
+
+
+class SquareRootMarketImpactModel(MarketImpactModel):
+    """Square root market impact model (common in academic literature)"""
+    
+    def __init__(self, impact_coefficient: float = 0.1):
+        self.impact_coefficient = impact_coefficient
+    
+    def calculate_impact(self, order: Order, volume: float, market_price: float) -> float:
+        if volume <= 0:
+            return 0.0
+            
+        # Square root relationship between order size and impact
+        participation_rate = order.qty / volume if volume > 0 else 0
+        impact_rate = self.impact_coefficient * (participation_rate ** 0.5)
+        impact = market_price * impact_rate
+        
+        return impact if order.side == "BUY" else -impact
+
+
+class ExecutionEngine:
+    """Handles realistic order execution with slippage, commissions, spreads, and market impact"""
+    
+    def __init__(self, 
+                 slippage_model: SlippageModel | None = None,
+                 commission_model: CommissionModel | None = None,
+                 market_impact_model: MarketImpactModel | None = None,
+                 execution_delay_ms: int = 0,
+                 spread_bps: float = 0):
+        self.slippage_model = slippage_model or FixedSlippageModel(0.0)
+        self.commission_model = commission_model or PerShareCommissionModel(0.0, 0.0)
+        self.market_impact_model = market_impact_model or MarketImpactModel()
+        self.execution_delay_ms = execution_delay_ms
+        self.spread_bps = spread_bps
+    
+    def execute_order(self, order: Order, market_price: float, volume: float = 0) -> Fill:
+        """Execute an order with realistic slippage, spreads, commissions, and market impact"""
+        
+        # Apply bid-ask spread
+        spread = market_price * (self.spread_bps / 10000)
+        if order.side == "BUY":
+            # Buy at ask (higher price)
+            base_price = market_price + (spread / 2)
+        else:
+            # Sell at bid (lower price)  
+            base_price = market_price - (spread / 2)
+        
+        # Apply slippage
+        slippage = self.slippage_model.calculate_slippage(order, base_price, volume)
+        
+        # Apply market impact
+        market_impact = self.market_impact_model.calculate_impact(order, volume, base_price)
+        
+        # Final fill price
+        fill_price = base_price + slippage + market_impact
+        
+        # Calculate commission
+        commission = self.commission_model.calculate_commission(order, fill_price)
+        
+        # Create fill with all costs included
+        fill = Fill(
+            symbol=order.symbol,
+            side=order.side,
+            qty=order.qty,
+            price=fill_price,
+            commission=commission
+        )
+        
+        return fill
+
+
+def create_slippage_model(config: dict) -> SlippageModel:
+    """Factory function to create slippage model from configuration"""
+    if 'tiers' in config and config['tiers']:
+        return VolumeBasedSlippageModel(config['tiers'])
+    elif 'bps' in config:
+        return PercentageSlippageModel(config['bps'])
+    elif 'amount' in config:
+        return FixedSlippageModel(config['amount'])
+    else:
+        # Default to no slippage
+        return FixedSlippageModel(0.0)
+
+
+def create_commission_model(config: dict) -> CommissionModel:
+    """Factory function to create commission model from configuration"""
+    if 'per_share' in config:
+        min_commission = config.get('min_commission', 0.0)
+        return PerShareCommissionModel(config['per_share'], min_commission)
+    elif 'rate' in config:
+        min_commission = config.get('min_commission', 0.0)
+        return PercentageCommissionModel(config['rate'], min_commission)
+    elif 'tiers' in config:
+        return TieredCommissionModel(config['tiers'])
+    else:
+        # Default to no commission
+        return PerShareCommissionModel(0.0, 0.0)
+
+
 class BrokerInterface:
-    """Abstract interface for broker operations"""
+    """Abstract interface for broker operations with realistic execution"""
 
     def __init__(self, starting_equity: float = 100_000):
         self._equity = starting_equity
         self._positions: dict[str, Position] = {}
+        self._execution_engine: ExecutionEngine | None = None
+
+    def set_execution_engine(self, execution_engine: ExecutionEngine) -> None:
+        """Set the execution engine for realistic order processing"""
+        self._execution_engine = execution_engine
 
     @property
     def equity(self) -> float:
@@ -300,7 +610,26 @@ class BrokerInterface:
         return list(self._positions.values())
 
     def execute(self, orders, slippage_model=None, commission_model=None) -> list[Fill]:
-        return []
+        """Execute orders with realistic slippage and commissions"""
+        fills = []
+        
+        # For now, still return empty list as actual execution happens in strategy
+        # But this provides the interface for future enhancement
+        return fills
+    
+    def execute_order_realistic(self, order: Order, market_price: float, volume: float = 0) -> Fill:
+        """Execute a single order with realistic execution modeling"""
+        if self._execution_engine:
+            return self._execution_engine.execute_order(order, market_price, volume)
+        else:
+            # Fallback to perfect execution
+            return Fill(
+                symbol=order.symbol,
+                side=order.side,
+                qty=order.qty,
+                price=market_price,
+                commission=0.0
+            )
 
     def flatten_all(self) -> None:
         self._positions.clear()
