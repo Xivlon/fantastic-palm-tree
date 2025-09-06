@@ -13,6 +13,7 @@ from .order import OrderProtocol
 from .position import PositionProtocol
 from .trade_result import TradeResultProtocol
 from .metrics import MetricsAggregatorProtocol
+from .data_provider import DataProviderProtocol
 
 __all__ = [
     "StrategyProtocol",
@@ -21,4 +22,5 @@ __all__ = [
     "PositionProtocol",
     "TradeResultProtocol",
     "MetricsAggregatorProtocol",
+    "DataProviderProtocol",
 ]
