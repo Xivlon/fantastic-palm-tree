@@ -8,7 +8,8 @@ interface TradeTableProps {
 }
 
 const TradeTable: React.FC<TradeTableProps> = ({ trades, maxRows = 10 }) => {
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value: number | null | undefined) => {
+    if (value == null) return 'N/A';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
@@ -17,7 +18,8 @@ const TradeTable: React.FC<TradeTableProps> = ({ trades, maxRows = 10 }) => {
     }).format(value);
   };
 
-  const formatPercent = (value: number) => {
+  const formatPercent = (value: number | null | undefined) => {
+    if (value == null) return 'N/A';
     return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
   };
 
