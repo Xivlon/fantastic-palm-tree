@@ -28,6 +28,7 @@
 - [Development Setup](#development-setup)
 - [Performance & Best Practices](#performance--best-practices)
 - [API Reference](#api-reference)
+- [Backtesting Dashboard](#backtesting-dashboard)
 
 ## What Is This Framework?
 
@@ -1273,11 +1274,82 @@ class BarProcessResult:
 
 ---
 
+## Backtesting Dashboard
+
+The framework now includes a modern React/TypeScript dashboard for interactive backtesting analysis and monitoring.
+
+### Features
+
+- **Real-time Dashboard**: Interactive web interface for monitoring backtests
+- **Performance Visualization**: Equity curves, drawdown charts, and comprehensive metrics
+- **Trade Analysis**: Detailed trade tables with P&L tracking and performance statistics
+- **Strategy Comparison**: Side-by-side comparison of different backtesting results
+- **Responsive Design**: Works on desktop, tablet, and mobile devices
+
+### Quick Start
+
+To run the dashboard:
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Open browser to http://localhost:3000
+```
+
+### Local Mock Mode Configuration
+
+For pure local development without external services:
+
+1. **Keep Local Mock Mode Active**: Ensure `USE_LOCAL_MOCK=true` in your environment
+2. **Delete API Route** (Optional): Remove `pages/api/backtest.ts` to prevent accidental external calls
+3. **Use Sample Data**: The dashboard will use realistic mock data for development
+
+```bash
+# Set environment variable for local mock mode
+export USE_LOCAL_MOCK=true
+
+# Optional: Remove external API integration
+rm pages/api/backtest.ts
+```
+
+When `USE_LOCAL_MOCK=true`, the dashboard operates entirely with sample data, making it perfect for:
+- Frontend development and testing
+- Demonstration purposes
+- Offline development environments
+- UI/UX experimentation
+
+The mock data includes realistic:
+- Backtest results with various strategies
+- Performance metrics and risk statistics
+- Trade histories with P&L tracking
+- Equity curves and drawdown data
+
+### Dashboard Components
+
+- **Homepage**: Overview and quick start guide
+- **Dashboard**: Main analytics interface with charts and metrics
+- **Backtest List**: Historical backtest results and comparison
+- **Trade Analysis**: Detailed trade-by-trade breakdown
+- **Strategy Management**: Strategy configuration and parameters
+
+### Technology Stack
+
+- **Frontend**: Next.js 14, React 18, TypeScript
+- **Styling**: Tailwind CSS for responsive design
+- **Charts**: Recharts for interactive data visualization
+- **Icons**: Lucide React for modern iconography
+
+---
+
 ## Conclusion
 
 Fantastic Palm Tree provides a comprehensive, professional-grade framework for algorithmic trading strategy development. Whether you're a beginner learning quantitative trading or an experienced developer building production systems, the framework's modular architecture, comprehensive features, and extensive documentation provide everything you need to succeed.
 
-The combination of type safety, extensible design, professional-grade risk management, and production-ready components makes this framework suitable for both research and live trading environments. With built-in support for parameter optimization, comprehensive metrics, and broker integration, you can take your strategies from development to deployment seamlessly.
+The combination of type safety, extensible design, professional-grade risk management, and production-ready components makes this framework suitable for both research and live trading environments. With built-in support for parameter optimization, comprehensive metrics, broker integration, and now a modern web dashboard, you can take your strategies from development to deployment seamlessly.
 
 Start with the quick examples above, explore the reference implementations, and gradually leverage the advanced features as your needs grow. The framework is designed to scale with you from simple backtests to sophisticated multi-strategy production systems.
 
