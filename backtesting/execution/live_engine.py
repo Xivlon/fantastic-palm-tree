@@ -3,10 +3,11 @@
 import asyncio
 import logging
 from datetime import datetime
-from typing import Any, Protocol
+from typing import Any, Protocol, Optional
 
 from ..brokers.base import BaseBroker, BrokerOrder, OrderSide, OrderType
 from ..data_providers.alpha_vantage import AlphaVantageDataProvider
+from ..metrics.live_aggregator import LiveMetricsAggregator
 
 
 class LiveStrategy(Protocol):
@@ -34,6 +35,7 @@ class LiveTradingEngine:
         data_provider: AlphaVantageDataProvider,
         symbols: list[str],
         update_interval: int = 60,  # seconds
+        enable_metrics: bool = True,
     ):
         self.broker = broker
         self.data_provider = data_provider
@@ -41,6 +43,11 @@ class LiveTradingEngine:
         self.update_interval = update_interval
         self.is_running = False
         self.strategy: LiveStrategy | None = None
+        
+        # Metrics tracking
+        self.metrics_aggregator: Optional[LiveMetricsAggregator] = None
+        if enable_metrics:
+            self.metrics_aggregator = LiveMetricsAggregator(broker, update_interval)
         
         # Setup logging
         self.logger = logging.getLogger("LiveTradingEngine")
@@ -101,6 +108,23 @@ class LiveTradingEngine:
         """Main trading loop."""
         while self.is_running:
             try:
+                # Update market prices in broker if it supports it
+                if hasattr(self.broker, 'update_market_prices'):
+                    prices = {}
+                    for symbol in self.symbols:
+                        quote_data = await self.data_provider.get_quote(symbol)
+                        if quote_data:
+                            parsed_quote = self.data_provider.parse_quote_data(quote_data)
+                            if parsed_quote and 'price' in parsed_quote:
+                                prices[symbol] = parsed_quote['price']
+                    
+                    if prices:
+                        self.broker.update_market_prices(prices)
+                
+                # Update metrics if enabled
+                if self.metrics_aggregator:
+                    await self.metrics_aggregator.update_metrics()
+                
                 # Get latest data for all symbols
                 for symbol in self.symbols:
                     if not self.is_running:
@@ -155,6 +179,35 @@ class LiveTradingEngine:
     async def get_orders(self, symbol: str | None = None) -> Any:
         """Get order history."""
         return await self.broker.get_orders(symbol)
+    
+    def get_current_metrics(self) -> dict[str, Any]:
+        """Get current performance metrics."""
+        if self.metrics_aggregator:
+            return self.metrics_aggregator.get_current_metrics()
+        return {}
+    
+    def get_equity_curve(self) -> Any:
+        """Get equity curve data."""
+        if self.metrics_aggregator:
+            return self.metrics_aggregator.get_equity_curve()
+        return None
+    
+    def export_results(self, output_dir: str = "live_trading_results") -> dict[str, str]:
+        """Export trading results to CSV files."""
+        files_created = {}
+        
+        # Export broker data if it supports CSV export
+        if hasattr(self.broker, 'export_to_csv'):
+            broker_files = self.broker.export_to_csv(output_dir)
+            files_created.update(broker_files)
+        
+        # Export metrics data
+        if self.metrics_aggregator:
+            metrics_files = self.metrics_aggregator.export_to_csv(output_dir)
+            files_created.update(metrics_files)
+        
+        self.logger.info(f"Exported trading results to {len(files_created)} files")
+        return files_created
 
 
 class SimpleTradingStrategy:
