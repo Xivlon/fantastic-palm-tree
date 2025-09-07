@@ -180,7 +180,6 @@ print(f"Maximum Drawdown: {metrics.max_drawdown:.2%}")
 ```bash
 pip install -e .
 ```
-
 ### Development Installation
 
 ```bash
@@ -190,7 +189,8 @@ cd fantastic-palm-tree
 
 # Install with development dependencies
 pip install -e ".[dev]"
-
+python -m pip install --upgrade pip
+pip install -r README.md
 # Run tests to verify installation
 pytest
 ```
