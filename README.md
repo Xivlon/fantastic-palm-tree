@@ -1375,6 +1375,30 @@ The mock data includes realistic:
 
 ---
 
+## Community and Support
+
+### 📖 Documentation
+- **[Installation & Quick Start](#quick-start)**: Get started in minutes
+- **[API Reference](#api-reference)**: Complete API documentation
+- **[Examples](examples/)**: Working code examples and tutorials
+
+### 💬 Getting Help
+- **[Support Guide](SUPPORT.md)**: Comprehensive support resources
+- **[GitHub Discussions](https://github.com/Xivlon/fantastic-palm-tree/discussions)**: Community Q&A and discussions
+- **[GitHub Issues](https://github.com/Xivlon/fantastic-palm-tree/issues)**: Bug reports and feature requests
+
+### 🤝 Contributing
+- **[Contributing Guide](CONTRIBUTING.md)**: How to contribute to the project
+- **[Code of Conduct](CODE_OF_CONDUCT.md)**: Community guidelines and standards
+- **[Security Policy](SECURITY.md)**: Security reporting and best practices
+
+### 📋 Project Information
+- **[Changelog](CHANGELOG.md)**: Release notes and version history
+- **[License](LICENSE)**: MIT License details
+- **[Architecture](Architecture.md)**: Technical architecture documentation
+
+---
+
 ## Conclusion
 
 Fantastic Palm Tree provides a comprehensive, professional-grade framework for algorithmic trading strategy development. Whether you're a beginner learning quantitative trading or an experienced developer building production systems, the framework's modular architecture, comprehensive features, and extensive documentation provide everything you need to succeed.
@@ -1383,4 +1407,8 @@ The combination of type safety, extensible design, professional-grade risk manag
 
 Start with the quick examples above, explore the reference implementations, and gradually leverage the advanced features as your needs grow. The framework is designed to scale with you from simple backtests to sophisticated multi-strategy production systems.
 
-For questions, issues, or contributions, please visit the [GitHub repository](https://github.com/Xivlon/fantastic-palm-tree).
+**Get Started:**
+- Follow the [Quick Start](#quick-start) guide for immediate results
+- Join our [community discussions](https://github.com/Xivlon/fantastic-palm-tree/discussions) for help and tips
+- Check our [Support Guide](SUPPORT.md) for comprehensive help resources
+- Review the [Contributing Guide](CONTRIBUTING.md) to help improve the framework

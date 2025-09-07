@@ -58,10 +58,55 @@ Instead, please:
 ## Supported Versions
 We provide security updates for the following versions:
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 0.1.x   | :white_check_mark: |
-| < 0.1   | :x:                |
+| Version | Supported          | Security Updates Until |
+| ------- | ------------------ | ---------------------- |
+| 0.1.x   | :white_check_mark: | Until 0.2.0 release   |
+| < 0.1   | :x:                | Not supported          |
+
+### Version Support Policy
+- **Current Major Version**: Full security and bug fix support
+- **Previous Major Version**: Security updates only for 6 months after new major release
+- **End of Life**: Versions older than the previous major version receive no updates
+
+## Dependency Management and Security
+
+### Dependency Upgrade Cadence
+
+#### Automated Updates
+- **Security patches**: Applied immediately upon availability
+- **Minor version updates**: Weekly automated dependency updates via Dependabot
+- **Major version updates**: Reviewed manually before integration
+
+#### Update Schedule
+- **Daily**: Security vulnerability scanning
+- **Weekly**: Automated dependency updates for patch/minor versions
+- **Monthly**: Review and testing of major dependency updates
+- **Quarterly**: Comprehensive dependency audit and cleanup
+
+#### Critical Security Updates
+For dependencies with critical security vulnerabilities:
+1. **Within 24 hours**: Assessment and emergency patch if exploitable
+2. **Within 48 hours**: Testing and validation in staging environment
+3. **Within 72 hours**: Production deployment with release notes
+
+### Dependency Security Monitoring
+We use multiple tools to monitor dependency security:
+
+- **GitHub Security Advisories**: Automatic vulnerability alerts
+- **Dependabot**: Automated dependency updates and security patches
+- **pip-audit**: Regular scanning for known vulnerabilities
+- **SAFETY**: Additional vulnerability database checking
+
+### Pinning Strategy
+- **Production dependencies**: Pinned to specific versions in `requirements-lock.txt`
+- **Development dependencies**: Allow minor version updates for latest features
+- **Security-critical packages**: Conservative update approach with thorough testing
+
+#### Dependency Categories
+1. **Core Framework Dependencies**: Conservative updates with extensive testing
+2. **Development Tools**: Regular updates for improved developer experience
+3. **Optional Features**: Isolated updates that don't affect core functionality
+4. **Transitive Dependencies**: Monitored but updated through primary dependencies
 
 ## Security Best Practices
 1. Always use the latest version of the framework
