@@ -178,8 +178,17 @@ print(f"Maximum Drawdown: {metrics.max_drawdown:.2%}")
 ### Standard Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/Xivlon/fantastic-palm-tree.git
+cd fantastic-palm-tree
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Install in development mode (optional)
 pip install -e .
 ```
+
 ### Development Installation
 
 ```bash
@@ -187,8 +196,9 @@ pip install -e .
 git clone https://github.com/Xivlon/fantastic-palm-tree.git
 cd fantastic-palm-tree
 
-# Install with development dependencies
-pip install -e ".[dev]"
+# Install dependencies
+pip install -r requirements.txt
+
 # Run tests to verify installation
 pytest
 ```
@@ -197,7 +207,8 @@ pytest
 
 - **Python 3.10+**: Modern Python features and type hints
 - **Core Dependencies**: numpy, pandas, matplotlib for data analysis
-- **Optional**: aiohttp for broker integration, pytest for testing
+- **Web Framework**: fastapi, aiohttp for API server and broker integration
+- **Testing**: pytest for development and testing
 
 ## Core Concepts
 
@@ -1092,6 +1103,18 @@ pytest tests/test_integration.py
 
 # Verbose output
 pytest -v -s
+```
+
+### Running the API Server
+
+The framework includes a FastAPI server that bridges the Python backtesting framework with web frontends:
+
+```bash
+# Start the API server
+uvicorn api_server:app --reload --port 8000
+
+# The server will be available at http://localhost:8000
+# API documentation available at http://localhost:8000/docs
 ```
 
 ### Code Quality
