@@ -1,0 +1,46 @@
+# Code Owners
+
+# Global owners - these users will be requested for review on all PRs
+* @maintainer
+
+# Core framework components
+/fantastic_palm_tree/ @maintainer @core-team
+/fantastic_palm_tree/strategy/ @strategy-experts @maintainer
+/fantastic_palm_tree/risk/ @risk-management-team @maintainer
+/fantastic_palm_tree/indicators/ @quant-team @maintainer
+
+# Backtesting infrastructure
+/backtesting/ @backtesting-team @maintainer
+/backtesting/brokers/ @broker-integration-team @maintainer
+/backtesting/execution/ @execution-team @maintainer
+
+# Configuration and data models
+/fantastic_palm_tree/config.py @config-team @maintainer
+/fantastic_palm_tree/models/ @data-modeling-team @maintainer
+
+# Documentation
+*.md @documentation-team @maintainer
+/docs/ @documentation-team @maintainer
+README.md @maintainer
+
+# CI/CD and project configuration
+.github/ @devops-team @maintainer
+pyproject.toml @packaging-team @maintainer
+requirements.txt @dependency-team @maintainer
+
+# Testing
+/tests/ @testing-team @maintainer
+test_*.py @testing-team @maintainer
+
+# Examples and demonstrations
+/examples/ @examples-team @maintainer
+example_*.py @examples-team @maintainer
+demo_*.py @examples-team @maintainer
+
+# Security-sensitive files
+SECURITY.md @security-team @maintainer
+/backtesting/brokers/auth.py @security-team @broker-integration-team @maintainer
+
+# API and interfaces
+api_server.py @api-team @maintainer
+/interfaces/ @api-team @maintainer
