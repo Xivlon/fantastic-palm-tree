@@ -191,6 +191,7 @@ cd fantastic-palm-tree
 
 # Install dependencies
 pip install -r requirements.txt
+pip install ruff
 
 # Install in development mode (optional)
 pip install -e .
@@ -205,6 +206,7 @@ cd fantastic-palm-tree
 
 # Install dependencies
 pip install -r requirements.txt
+pip install ruff
 
 # Run tests to verify installation
 pytest
