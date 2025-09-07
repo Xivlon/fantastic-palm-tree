@@ -119,6 +119,16 @@ trading_results/
 *bridge_report*.txt
 *.csv
 
+# Dependency management artifacts
+*-security-report.json
+*-dependency-tree.json
+*-security-cyclonedx.json
+npm-security-report.json
+python-security-report.json
+security-report.json
+trivy-results.sarif
+major-updates-review.md
+
 # Node.js / Next.js Dashboard
 node_modules/
 .next/

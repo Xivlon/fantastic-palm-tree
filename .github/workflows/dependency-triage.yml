@@ -1,0 +1,447 @@
+name: Dependency Triage
+
+on:
+  pull_request:
+    paths:
+      - 'requirements*.txt'
+      - 'pyproject.toml'
+      - 'package*.json'
+      - '.github/dependabot.yml'
+  schedule:
+    # Run every Monday at 10:00 AM UTC (after Dependabot updates)
+    - cron: '0 10 * * 1'
+  workflow_dispatch:
+
+jobs:
+  dependency-audit:
+    name: Dependency Audit and Classification
+    runs-on: ubuntu-latest
+    outputs:
+      has-major-updates: ${{ steps.classify.outputs.has-major-updates }}
+      major-updates: ${{ steps.classify.outputs.major-updates }}
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependency analysis tools
+      run: |
+        pip install pip-audit pip-tools requests packaging
+        npm install -g npm-audit-resolver
+        
+    - name: Cache Python dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-audit-${{ hashFiles('**/pyproject.toml', '**/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-audit-
+
+    - name: Analyze Python dependencies for security vulnerabilities
+      run: |
+        echo "🔍 Scanning Python dependencies for security vulnerabilities..."
+        pip-audit --desc --format=json --output=python-security-report.json || true
+        pip-audit --desc --format=cyclonedx-json --output=python-security-cyclonedx.json || true
+        
+        # Generate human-readable summary
+        if [ -s python-security-report.json ]; then
+          echo "⚠️ Security vulnerabilities found in Python dependencies:" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          cat python-security-report.json >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+        else
+          echo "✅ No security vulnerabilities found in Python dependencies" >> $GITHUB_STEP_SUMMARY
+        fi
+
+    - name: Analyze Node.js dependencies for security vulnerabilities
+      run: |
+        echo "🔍 Scanning Node.js dependencies for security vulnerabilities..."
+        npm audit --audit-level moderate --json > npm-security-report.json || true
+        
+        # Generate human-readable summary
+        if [ -s npm-security-report.json ] && [ "$(jq '.vulnerabilities | length' npm-security-report.json)" -gt 0 ]; then
+          echo "⚠️ Security vulnerabilities found in Node.js dependencies:" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          jq '.vulnerabilities' npm-security-report.json >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+        else
+          echo "✅ No security vulnerabilities found in Node.js dependencies" >> $GITHUB_STEP_SUMMARY
+        fi
+
+    - name: Classify dependency updates
+      id: classify
+      run: |
+        cat > classify_dependencies.py << 'EOF'
+        import json
+        import re
+        import sys
+        from packaging import version
+        import subprocess
+        import os
+
+        def classify_update_type(old_version, new_version):
+            """Classify update as patch, minor, or major based on semantic versioning"""
+            try:
+                old_ver = version.parse(old_version.lstrip('v'))
+                new_ver = version.parse(new_version.lstrip('v'))
+                
+                if old_ver.major != new_ver.major:
+                    return "major"
+                elif old_ver.minor != new_ver.minor:
+                    return "minor"
+                else:
+                    return "patch"
+            except:
+                # If version parsing fails, assume it's major to be safe
+                return "major"
+
+        def analyze_pr_changes():
+            """Analyze changes in dependency files from PR"""
+            major_updates = []
+            
+            # Check if this is a PR
+            if os.environ.get('GITHUB_EVENT_NAME') == 'pull_request':
+                try:
+                    # Get PR changes for Python dependencies
+                    result = subprocess.run([
+                        'git', 'diff', 'HEAD~1', 'HEAD', '--', 'requirements*.txt', 'pyproject.toml'
+                    ], capture_output=True, text=True)
+                    
+                    if result.stdout:
+                        print("📦 Python dependency changes detected")
+                        # Look for version changes in requirements files
+                        for line in result.stdout.split('\n'):
+                            if line.startswith('+') and '==' in line and not line.startswith('+++'):
+                                # Extract package and version
+                                match = re.search(r'\+([^=]+)==([^\s]+)', line)
+                                if match:
+                                    package, new_version = match.groups()
+                                    print(f"  ➕ {package}: {new_version}")
+                                    
+                                    # Check if there's a corresponding removal (update)
+                                    removal_pattern = f'-{re.escape(package)}=='
+                                    for old_line in result.stdout.split('\n'):
+                                        if old_line.startswith('-') and removal_pattern in old_line:
+                                            old_match = re.search(f'-{re.escape(package)}==([^\s]+)', old_line)
+                                            if old_match:
+                                                old_version = old_match.group(1)
+                                                update_type = classify_update_type(old_version, new_version)
+                                                print(f"    🔄 Update type: {update_type} ({old_version} → {new_version})")
+                                                
+                                                if update_type == "major":
+                                                    major_updates.append({
+                                                        'package': package,
+                                                        'ecosystem': 'pip',
+                                                        'old_version': old_version,
+                                                        'new_version': new_version,
+                                                        'type': update_type
+                                                    })
+                    
+                    # Get PR changes for Node.js dependencies
+                    result = subprocess.run([
+                        'git', 'diff', 'HEAD~1', 'HEAD', '--', 'package*.json'
+                    ], capture_output=True, text=True)
+                    
+                    if result.stdout:
+                        print("📦 Node.js dependency changes detected")
+                        # Parse package.json changes
+                        for line in result.stdout.split('\n'):
+                            if '"' in line and ':' in line:
+                                if line.strip().startswith('+') or line.strip().startswith('-'):
+                                    match = re.search(r'[+-]\s*"([^"]+)":\s*"([^"]+)"', line)
+                                    if match:
+                                        package, package_version = match.groups()
+                                        if line.strip().startswith('+'):
+                                            print(f"  ➕ {package}: {package_version}")
+                                        
+                                        # For major framework updates like Next.js, flag them
+                                        if package in ['next', 'react', 'react-dom'] and line.strip().startswith('+'):
+                                            # Try to find the old version
+                                            removal_pattern = f'-\\s*"{re.escape(package)}":'
+                                            for old_line in result.stdout.split('\n'):
+                                                if re.search(removal_pattern, old_line):
+                                                    old_match = re.search(f'-\\s*"{re.escape(package)}":\\s*"([^"]+)"', old_line)
+                                                    if old_match:
+                                                        old_version = old_match.group(1)
+                                                        update_type = classify_update_type(old_version, package_version)
+                                                        print(f"    🔄 Update type: {update_type} ({old_version} → {package_version})")
+                                                        
+                                                        if update_type == "major":
+                                                            major_updates.append({
+                                                                'package': package,
+                                                                'ecosystem': 'npm',
+                                                                'old_version': old_version,
+                                                                'new_version': package_version,
+                                                                'type': update_type
+                                                            })
+                
+                except Exception as e:
+                    print(f"Error analyzing PR changes: {e}")
+            
+            return major_updates
+
+        # Run analysis
+        major_updates = analyze_pr_changes()
+        
+        # Set outputs
+        has_major = "true" if major_updates else "false"
+        print(f"::set-output name=has-major-updates::{has_major}")
+        print(f"::set-output name=major-updates::{json.dumps(major_updates)}")
+        
+        # Add to step summary
+        if major_updates:
+            print("🚨 Major dependency updates detected that require manual review:")
+            for update in major_updates:
+                print(f"  • {update['package']} ({update['ecosystem']}): {update['old_version']} → {update['new_version']}")
+        else:
+            print("✅ No major dependency updates detected")
+        EOF
+        
+        python classify_dependencies.py
+
+    - name: Generate dependency reports
+      run: |
+        echo "📊 Generating dependency reports..."
+        
+        # Python dependency tree
+        pip install pipdeptree
+        pipdeptree --json > python-dependency-tree.json
+        
+        # Node.js dependency analysis
+        if [ -f package.json ]; then
+          npm list --json > node-dependency-tree.json || true
+        fi
+        
+        echo "## 📊 Dependency Analysis Report" >> $GITHUB_STEP_SUMMARY
+        echo "Generated at: $(date)" >> $GITHUB_STEP_SUMMARY
+
+    - name: Upload dependency analysis artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: dependency-analysis-${{ github.run_number }}
+        path: |
+          *-security-report.json
+          *-dependency-tree.json
+        retention-days: 30
+
+  comprehensive-ci:
+    name: Comprehensive CI Pipeline
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        node-version: ["18", "20"]
+        exclude:
+          # Reduce matrix size for efficiency - focus on key combinations
+          - os: windows-latest
+            python-version: "3.9"
+          - os: windows-latest
+            python-version: "3.10"
+          - os: macos-latest
+            python-version: "3.9"
+          - os: macos-latest
+            python-version: "3.10"
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Set up Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Cache Python dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/pip
+          ~/.local/lib/python${{ matrix.python-version }}/site-packages
+        key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**/pyproject.toml', '**/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-python-${{ matrix.python-version }}-
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[all]"
+        pip install ruff pip-audit
+
+    - name: Install Node.js dependencies
+      run: |
+        npm ci
+        npm audit fix --audit-level moderate || true
+
+    - name: Lint Python code
+      run: |
+        echo "🔍 Linting Python code with ruff..."
+        ruff check . --output-format=github --select=E9,F63,F7,F82 --target-version=py39
+        ruff check . --output-format=github --target-version=py39 --exit-zero
+        
+        echo "🔍 Linting Python code with flake8..."
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || true
+
+    - name: Type check Python code
+      run: |
+        echo "🔍 Type checking Python code with mypy..."
+        mypy fantastic_palm_tree/ --ignore-missing-imports --check-untyped-defs || true
+      continue-on-error: true
+
+    - name: Lint frontend code
+      run: |
+        echo "🔍 Linting frontend code with ESLint..."
+        npm run lint
+
+    - name: Type check frontend code
+      run: |
+        echo "🔍 Type checking frontend code with TypeScript..."
+        npm run type-check
+
+    - name: Run Python tests
+      run: |
+        echo "🧪 Running Python tests..."
+        pytest --cov=fantastic_palm_tree --cov-report=xml --cov-report=term-missing --cov-fail-under=40 || true
+      continue-on-error: true
+
+    - name: Build frontend
+      run: |
+        echo "🏗️ Building frontend..."
+        npm run build
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-latest' && matrix.node-version == '20'
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  docker-build:
+    name: Docker Build Validation
+    runs-on: ubuntu-latest
+    needs: [dependency-audit]
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build development image
+      run: |
+        echo "🐳 Building development Docker image..."
+        docker buildx build \
+          --target development \
+          --tag fantastic-palm-tree:dev \
+          --load \
+          .
+
+    - name: Build production image
+      run: |
+        echo "🐳 Building production Docker image..."
+        docker buildx build \
+          --target production \
+          --tag fantastic-palm-tree:prod \
+          --load \
+          .
+
+    - name: Test Docker images
+      run: |
+        echo "🧪 Testing Docker images..."
+        
+        # Test development image
+        docker run --rm fantastic-palm-tree:dev python -c "import fantastic_palm_tree; print('Development image: OK')"
+        
+        # Test production image  
+        docker run --rm fantastic-palm-tree:prod python -c "import fantastic_palm_tree; print('Production image: OK')"
+
+    - name: Security scan Docker images
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'fantastic-palm-tree:prod'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+      continue-on-error: true
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+      continue-on-error: true
+
+  major-update-review:
+    name: Major Update Review
+    runs-on: ubuntu-latest
+    needs: [dependency-audit]
+    if: needs.dependency-audit.outputs.has-major-updates == 'true'
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Create major update review
+      run: |
+        echo "🚨 Major dependency updates detected requiring review:"
+        echo '${{ needs.dependency-audit.outputs.major-updates }}' | jq -r '.[] | "• \(.package) (\(.ecosystem)): \(.old_version) → \(.new_version)"'
+        
+        cat > major-updates-review.md << 'EOF'
+        # Major Dependency Updates Review
+        
+        The following major dependency updates have been detected and require manual review:
+        
+        EOF
+        
+        echo '${{ needs.dependency-audit.outputs.major-updates }}' | jq -r '.[] | "## \(.package) (\(.ecosystem))\n\n**Version Change:** \(.old_version) → \(.new_version)\n\n**Review Checklist:**\n- [ ] Read release notes and changelog\n- [ ] Check for breaking changes\n- [ ] Test locally in development environment\n- [ ] Consider creating canary branch for testing\n- [ ] Update related documentation if needed\n- [ ] Verify all tests pass\n\n---\n"' >> major-updates-review.md
+        
+        echo "## 📋 Review Process" >> major-updates-review.md
+        echo "" >> major-updates-review.md
+        echo "1. **Read Release Notes**: Check the official release notes for each major update" >> major-updates-review.md
+        echo "2. **Test Locally**: Create a local branch and test the updates" >> major-updates-review.md
+        echo "3. **Canary Branch**: Consider creating a canary branch for extended testing" >> major-updates-review.md
+        echo "4. **Documentation**: Update any affected documentation" >> major-updates-review.md
+        echo "5. **Approval**: Get appropriate approvals before merging" >> major-updates-review.md
+
+    - name: Upload major update review
+      uses: actions/upload-artifact@v3
+      with:
+        name: major-updates-review-${{ github.run_number }}
+        path: major-updates-review.md
+        retention-days: 90
+
+    - name: Comment on PR (if PR event)
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const reviewContent = fs.readFileSync('major-updates-review.md', 'utf8');
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `🚨 **Major Dependency Updates Detected**\n\n${reviewContent}`
+          });
