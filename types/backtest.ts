@@ -90,3 +90,52 @@ export interface DashboardData {
   isLoading: boolean;
   error?: string;
 }
+
+export interface StrategyTemplate {
+  id: string;
+  name: string;
+  displayName: string;
+  description: string;
+  category: 'trend' | 'mean_reversion' | 'momentum' | 'volatility' | 'arbitrage' | 'custom';
+  parameters: StrategyParameter[];
+  riskLevel: 'low' | 'medium' | 'high';
+  timeframe: string[];
+  assets: string[];
+  createdAt: string;
+  updatedAt: string;
+  isBuiltIn: boolean;
+  author?: string;
+  backtestResults?: {
+    count: number;
+    avgReturn: number;
+    avgSharpe: number;
+    winRate: number;
+  };
+}
+
+export interface StrategyParameter {
+  name: string;
+  displayName: string;
+  type: 'number' | 'string' | 'boolean' | 'select' | 'range';
+  defaultValue: any;
+  description: string;
+  constraints?: {
+    min?: number;
+    max?: number;
+    step?: number;
+    options?: string[];
+  };
+  required: boolean;
+}
+
+export interface StrategyInstance {
+  id: string;
+  templateId: string;
+  name: string;
+  parameters: Record<string, any>;
+  status: 'draft' | 'active' | 'inactive' | 'testing';
+  createdAt: string;
+  updatedAt: string;
+  backtestCount: number;
+  lastBacktestId?: string;
+}
