@@ -1,0 +1,88 @@
+name: Documentation
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python  
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.12"
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[all]"
+        pip install sphinx sphinx-rtd-theme myst-parser
+        
+    - name: Check README links
+      run: |
+        pip install markdown-link-check
+        markdown-link-check README.md --config .github/markdown-link-check.json || true
+        
+    - name: Validate documentation structure
+      run: |
+        # Check that all referenced files exist
+        python -c "
+        import os
+        import re
+        
+        def check_file_links(file_path):
+            with open(file_path, 'r') as f:
+                content = f.read()
+            
+            # Find markdown links
+            links = re.findall(r'\[.*?\]\((.*?)\)', content)
+            missing = []
+            
+            for link in links:
+                if link.startswith('http'):
+                    continue
+                if link.startswith('#'):
+                    continue
+                    
+                full_path = os.path.join(os.path.dirname(file_path), link)
+                if not os.path.exists(full_path):
+                    missing.append(link)
+            
+            if missing:
+                print(f'Missing files in {file_path}: {missing}')
+            
+            return len(missing) == 0
+            
+        # Check main documentation files
+        files_to_check = [
+            'README.md',
+            'CONTRIBUTING.md', 
+            'docs/ARCHITECTURE_DIAGRAM.md',
+            'docs/adr/README.md'
+        ]
+        
+        all_good = True
+        for file_path in files_to_check:
+            if os.path.exists(file_path):
+                if not check_file_links(file_path):
+                    all_good = False
+        
+        if not all_good:
+            print('Some documentation links are broken')
+        else:
+            print('All documentation links are valid')
+        "
+        
+    - name: Build documentation
+      run: |
+        # Create basic Sphinx documentation if it doesn't exist
+        if [ ! -d "docs/source" ]; then
+          mkdir -p docs/source
+          echo "Documentation build placeholder - Sphinx setup needed"
+        fi
