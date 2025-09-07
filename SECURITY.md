@@ -48,6 +48,13 @@ Instead, please:
 - **Implement proper access controls** for trading systems
 - **Regular security audits** of production deployments
 
+### CI/CD Pipeline Security
+- **GitHub Actions are pinned to specific versions** to prevent supply chain attacks
+- **Critical actions can be pinned to commit SHAs** for enhanced security
+- **Automated security scanning** with pip-audit, bandit, and semgrep
+- **Dependency vulnerability monitoring** via GitHub security advisories
+- **Secret scanning** to prevent credential leaks
+
 ## Supported Versions
 We provide security updates for the following versions:
 
