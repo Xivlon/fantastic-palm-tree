@@ -17,17 +17,28 @@ updates:
       prefix: "deps"
       include: "scope"
     groups:
+      # Core data science and framework dependencies
       core-dependencies:
         patterns:
           - "pandas*"
           - "numpy*"
           - "matplotlib*"
           - "pydantic*"
+        update-types:
+          - "patch"
+          - "minor"
+      # Web API and server dependencies
       web-dependencies:
         patterns:
           - "fastapi*"
           - "uvicorn*"
           - "aiohttp*"
+          - "starlette*"
+          - "anyio*"
+        update-types:
+          - "patch"
+          - "minor"
+      # Development and testing tools
       dev-dependencies:
         patterns:
           - "pytest*"
@@ -35,6 +46,18 @@ updates:
           - "isort*"
           - "mypy*"
           - "flake8*"
+          - "ruff*"
+          - "pre-commit*"
+          - "coverage*"
+        update-types:
+          - "patch"
+          - "minor"
+      # Security updates (grouped for efficiency)
+      security-updates:
+        patterns:
+          - "*"
+        update-types:
+          - "security-update"
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
@@ -52,6 +75,20 @@ updates:
     commit-message:
       prefix: "ci"
       include: "scope"
+    groups:
+      # Group all GitHub Actions updates
+      github-actions-updates:
+        patterns:
+          - "*"
+        update-types:
+          - "patch"
+          - "minor"
+      # Security updates for actions
+      github-actions-security:
+        patterns:
+          - "*"
+        update-types:
+          - "security-update"
 
   # Node.js dependencies (for frontend/docs)
   - package-ecosystem: "npm"
@@ -69,3 +106,39 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    groups:
+      # Core Next.js and React dependencies
+      frontend-core:
+        patterns:
+          - "next*"
+          - "react*"
+          - "@types/react*"
+        update-types:
+          - "patch"
+          - "minor"
+      # Development dependencies
+      frontend-dev:
+        patterns:
+          - "@types/*"
+          - "eslint*"
+          - "typescript*"
+          - "tailwindcss*"
+          - "postcss*"
+          - "autoprefixer*"
+        update-types:
+          - "patch"
+          - "minor"
+      # UI and charting libraries
+      frontend-ui:
+        patterns:
+          - "recharts*"
+          - "lucide-react*"
+        update-types:
+          - "patch"
+          - "minor"
+      # Security updates for npm packages
+      frontend-security:
+        patterns:
+          - "*"
+        update-types:
+          - "security-update"
