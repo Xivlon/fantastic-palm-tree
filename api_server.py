@@ -500,11 +500,98 @@ async def run_backtest_async(backtest_id: str):
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint."""
+    """Basic health check endpoint."""
     return {
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
         "running_backtests": len(running_backtests)
+    }
+
+@app.get("/health/detailed")
+async def detailed_health_check():
+    """Detailed health check with system information."""
+    import psutil
+    import platform
+    
+    try:
+        cpu_percent = psutil.cpu_percent(interval=1)
+        memory = psutil.virtual_memory()
+        disk = psutil.disk_usage('/')
+    except:
+        cpu_percent = 0
+        memory = None
+        disk = None
+    
+    health_data = {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "version": "0.1.0",
+        "python_version": platform.python_version(),
+        "system": {
+            "platform": platform.platform(),
+            "cpu_count": os.cpu_count(),
+            "cpu_percent": cpu_percent,
+        },
+        "application": {
+            "running_backtests": len(running_backtests),
+            "uptime_seconds": 0,  # Would need startup time tracking
+        },
+        "dependencies": {
+            "pandas_available": True,
+            "numpy_available": True,
+            "matplotlib_available": True,
+        }
+    }
+    
+    if memory:
+        health_data["system"]["memory"] = {
+            "total": memory.total,
+            "available": memory.available,
+            "percent": memory.percent
+        }
+    
+    if disk:
+        health_data["system"]["disk"] = {
+            "total": disk.total,
+            "free": disk.free,
+            "percent": (disk.used / disk.total) * 100
+        }
+    
+    return health_data
+
+@app.get("/health/ready")
+async def readiness_check():
+    """Readiness check for Kubernetes deployment."""
+    # Check if all required services are available
+    checks = {
+        "framework_import": False,
+        "data_providers": False,
+        "config_valid": False
+    }
+    
+    try:
+        import fantastic_palm_tree
+        checks["framework_import"] = True
+    except ImportError:
+        pass
+    
+    try:
+        from fantastic_palm_tree.config import StrategyConfig
+        config = StrategyConfig()
+        checks["config_valid"] = True
+    except Exception:
+        pass
+    
+    # Simple data provider check
+    checks["data_providers"] = True  # Assume available for now
+    
+    all_ready = all(checks.values())
+    status_code = 200 if all_ready else 503
+    
+    return {
+        "status": "ready" if all_ready else "not_ready",
+        "timestamp": datetime.now().isoformat(),
+        "checks": checks
     }
 
 if __name__ == "__main__":

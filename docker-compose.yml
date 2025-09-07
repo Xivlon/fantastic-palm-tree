@@ -1,0 +1,62 @@
+# Docker Compose for development and testing
+version: '3.8'
+
+services:
+  # Main application
+  app:
+    build:
+      context: .
+      target: development
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - HOST=0.0.0.0
+      - PORT=8000
+      - LOG_LEVEL=DEBUG
+      - DATA_DIRECTORY=/app/data
+      - CACHE_DIRECTORY=/app/cache
+    volumes:
+      - .:/app
+      - app_data:/app/data
+      - app_cache:/app/cache
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Production-like app
+  app-prod:
+    build:
+      context: .
+      target: production
+    ports:
+      - "8001:8000"
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - HOST=0.0.0.0
+      - PORT=8000
+      - LOG_LEVEL=INFO
+      - MAX_CONCURRENT_BACKTESTS=10
+      - WORKER_THREADS=4
+    volumes:
+      - app_data_prod:/app/data
+      - app_cache_prod:/app/cache
+    restart: unless-stopped
+    profiles:
+      - production
+
+volumes:
+  app_data:
+    driver: local
+  app_cache:
+    driver: local
+  app_data_prod:
+    driver: local
+  app_cache_prod:
+    driver: local

@@ -1,9 +1,16 @@
 # Fantastic Palm Tree - Advanced Backtesting Framework
 
 [![CI](https://github.com/Xivlon/fantastic-palm-tree/workflows/CI/badge.svg)](https://github.com/Xivlon/fantastic-palm-tree/actions)
+[![Security](https://github.com/Xivlon/fantastic-palm-tree/workflows/Security%20Scan/badge.svg)](https://github.com/Xivlon/fantastic-palm-tree/actions)
+[![Documentation](https://github.com/Xivlon/fantastic-palm-tree/workflows/Documentation/badge.svg)](https://github.com/Xivlon/fantastic-palm-tree/actions)
 [![codecov](https://codecov.io/gh/Xivlon/fantastic-palm-tree/branch/main/graph/badge.svg)](https://codecov.io/gh/Xivlon/fantastic-palm-tree)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Checked with mypy](http://www.mypy-lang.org/static/mypy_badge.svg)](http://mypy-lang.org/)
+[![security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://github.com/PyCQA/bandit)
+[![PyPI](https://img.shields.io/pypi/v/fantastic-palm-tree.svg)](https://pypi.org/project/fantastic-palm-tree/)
+[![Downloads](https://pepy.tech/badge/fantastic-palm-tree)](https://pepy.tech/project/fantastic-palm-tree)
 
 **Fantastic Palm Tree** is a comprehensive, professional-grade backtesting framework designed for quantitative trading strategy development. Built with a modular architecture that emphasizes type safety, extensibility, and production readiness, it provides everything you need to develop, test, and deploy algorithmic trading strategies.
 
