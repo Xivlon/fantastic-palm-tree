@@ -1,5 +1,4 @@
 name: CI
-__pycache__/
 *.pyc
 on:
   push:
