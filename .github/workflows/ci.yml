@@ -2,7 +2,7 @@ name: CI
 
 # For enhanced supply chain security, actions can be pinned to commit SHAs:
 # actions/checkout@v5         -> actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29  # v5.0.0
-# actions/setup-python@v5     -> actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c  # v5.0.0  
+# actions/setup-python@v6     -> actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c  # v5.0.0  
 # actions/cache@v4            -> actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319  # v4.0.1
 # codecov/codecov-action@v4   -> codecov/codecov-action@125fc84a9a348dbcf27191600474c915c6b804b8  # v4.3.0
 
@@ -25,7 +25,7 @@ jobs:
     - uses: actions/checkout@v5
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -122,7 +122,7 @@ jobs:
     - uses: actions/checkout@v5
     
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: "3.12"
         
