@@ -7,6 +7,7 @@ import pandas as pd
 
 from ..core.engine import BacktestEngine
 from ..metrics.calculator import MetricsCalculator
+from .results import OptimizationResults
 
 
 class ParameterOptimizer(ABC):
@@ -30,7 +31,7 @@ class ParameterOptimizer(ABC):
         return metrics.sharpe_ratio
 
     @abstractmethod
-    def optimize(self, data: pd.DataFrame, parameter_space) -> "OptimizationResults":
+    def optimize(self, data: pd.DataFrame, parameter_space) -> OptimizationResults:
         """Optimize parameters."""
         pass
 
