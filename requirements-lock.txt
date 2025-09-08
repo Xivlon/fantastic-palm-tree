@@ -42,7 +42,7 @@ jsonpatch==1.32
 jsonpointer==2.0
 jsonschema==4.10.3
 kiwisolver==1.4.9
-launchpadlib==1.11.0
+launchpadlib==2.1.0
 lazr.restfulclient==0.14.6
 lazr.uri==1.0.6
 markdown-it-py==3.0.0
