@@ -229,7 +229,7 @@ jobs:
         echo "Generated at: $(date)" >> $GITHUB_STEP_SUMMARY
 
     - name: Upload dependency analysis artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: dependency-analysis-${{ github.run_number }}
         path: |
@@ -425,7 +425,7 @@ jobs:
         echo "5. **Approval**: Get appropriate approvals before merging" >> major-updates-review.md
 
     - name: Upload major update review
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: major-updates-review-${{ github.run_number }}
         path: major-updates-review.md
